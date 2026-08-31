@@ -17,7 +17,7 @@ From Anthropic's docs:
 Only 4 things. Nothing you would type on purpose:
 
 1. `git push --force` to `main` / `master`
-2. `gh pr merge` (your rule: Anthony merges)
+2. `gh pr merge` (a person merges, not the agent)
 3. Reading `.env` files into context (secret leak)
 4. `rm -rf /` and friends
 
@@ -25,8 +25,9 @@ Everything else stays fast and light.
 
 ## How to switch it on
 
-Add this to your settings file
-(`~/.claude-manifest/settings.json`, or a project's `.claude/settings.json`):
+Add this to your settings file - your user config
+(`~/.claude/settings.json`, or whichever `CLAUDE_CONFIG_DIR` you use), or a
+single project's `.claude/settings.json`:
 
 ```json
 {

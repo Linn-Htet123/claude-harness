@@ -26,11 +26,20 @@
 - <e.g. the test suite needs Docker running>
 - <e.g. env var X must be set or the build silently produces an empty bundle>
 
-## Rules
+## Team rules
+
+This is where anything specific to THIS team or company goes. The harness
+itself is generic on purpose - it works the same in every repo. The
+differences live here.
 
 - IMPORTANT: <the single most important rule for this repo>
-- Never commit directly to `main`. Branch, then open a PR.
-- <who reviews / who merges>
+- Branch naming: <prefix, ticket id, length limit - or "no rule">
+- Who reviews: <name or team>
+- Who merges: <name or team>
+- Deploys: <who is allowed, and how>
+- Never merge or deploy without: <the approval this team requires>
+- <anything an agent must never touch: a protected file, a locked PR, a
+  frozen migration folder>
 
 ---
 Keep this file SHORT. Test for every line: would deleting it cause a mistake?

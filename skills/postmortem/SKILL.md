@@ -13,7 +13,7 @@ next Claude session - does not repeat this.
 
 Write about systems, not people.
 
-- Not: "Larry deployed without testing."
+- Not: "<name> deployed without testing."
 - Yes: "The deploy path had no required test gate, so an untested change
   reached production."
 

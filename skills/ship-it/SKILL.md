@@ -44,7 +44,9 @@ git checkout -b <type>/<short-name>
 
 `type` is one of: `feat`, `fix`, `hotfix`, `chore`, `docs`, `refactor`, `test`.
 
-**Keep the branch name under 30 characters.**
+**Check `CLAUDE.md` for this repo's branch rule first** - some teams have a
+required prefix, a ticket id, or a length limit. Follow theirs, not this one.
+If the repo says nothing, keep it short and readable.
 
 ## Step 4 - commit
 
@@ -95,8 +97,13 @@ Expected: <result>
 
 **Do not merge.** Post the PR link and say who needs to review it.
 
+Check `CLAUDE.md` for who reviews and who merges in this repo. If it does not
+say, ask - do not assume you may merge.
+
 Merging is a human decision. That is not a formality - it is the one control
-that catches everything the machine missed.
+that catches everything the machine missed. Every large engineering org that
+has published on this keeps the same rule: the agent opens the PR, a person
+merges it.
 
 ## Then
 

@@ -39,7 +39,7 @@ Do not write from memory. Check:
 | Do not write | Write |
 |---|---|
 | Refactoring the auth middleware | Making login checks work the same everywhere, so we stop getting the random logout bug |
-| Blocked on the migration | Waiting on a database change. Anthony has to approve it. About a day after he does |
+| Blocked on the migration | Waiting on a database change. It needs approval from whoever owns the database. About a day after that |
 | It's mostly done, just needs testing | The code is written. Now proving it works, which is about half a day |
 | We have tech debt in that area | That part of the code is fragile. Changing it is slow and risky until we clean it up. Roughly N days |
 
