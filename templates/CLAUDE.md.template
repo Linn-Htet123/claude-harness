@@ -1,0 +1,37 @@
+# <PROJECT NAME>
+
+<One sentence: what this project does and who uses it.>
+
+## Commands
+
+- Install: `<...>`
+- Dev: `<...>`
+- Test: `<...>`
+- Test one file: `<...>`
+- Lint: `<...>`
+- Build: `<...>`
+
+## Layout
+
+- `<dir>/` — <what lives here>
+- `<dir>/` — <what lives here>
+
+## Conventions that are NOT obvious from the code
+
+- <e.g. all API errors go through lib/errors.ts, never throw raw>
+- <e.g. DB migrations are generated, never hand-edited>
+
+## Gotchas
+
+- <e.g. the test suite needs Docker running>
+- <e.g. env var X must be set or the build silently produces an empty bundle>
+
+## Rules
+
+- IMPORTANT: <the single most important rule for this repo>
+- Never commit directly to `main`. Branch, then open a PR.
+- <who reviews / who merges>
+
+---
+Keep this file SHORT. Test for every line: would deleting it cause a mistake?
+If not, delete it. A long CLAUDE.md gets ignored.
