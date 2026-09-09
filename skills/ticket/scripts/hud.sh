@@ -6,6 +6,7 @@
 # Panels: NOW (what is going on) · LIFECYCLE (the ticket loop) · SUGGESTED NEXT (ranked)
 # Auto-refreshes every 5 s (PR/CI about once a minute).
 # Keys:   n = run suggestion 1   1-4 = run that suggestion   l = agent loops   s = find a skill
+#         e = open repo + spec in Cursor/VS Code   d = git diff in a pane
 #         c = change folder   t = target (this pane / new Herdr pane)   r = refresh   q = quit
 # Bash 3 compatible (macOS). Width-aware. Works outside Herdr too (runs Claude in the foreground).
 set -uo pipefail
@@ -28,7 +29,7 @@ if [ -t 1 ]; then
   MAG=$'\033[35m'; CYN=$'\033[36m'; GRN=$'\033[32m'; YEL=$'\033[33m'; BLU=$'\033[34m'; RED=$'\033[31m'; WHT=$'\033[97m'
 else B=""; D=""; R=""; INV=""; MAG=""; CYN=""; GRN=""; YEL=""; BLU=""; RED=""; WHT=""; fi
 K() { printf '%s%s %s %s' "$INV" "$YEL" "$1" "$R"; }          # key label, high contrast
-width() { local w=""; w="$(stty size </dev/tty 2>/dev/null | awk '{print $2}')"; [ -z "$w" ] || [ "$w" = 0 ] && w="$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")"; [ "$w" -lt 40 ] && w=40; echo "$w"; }
+width() { local w=""; w="$( { stty size </dev/tty; } 2>/dev/null | awk '{print $2}')"; [ -z "$w" ] || [ "$w" = 0 ] && w="$(tput cols 2>/dev/null || echo "${COLUMNS:-80}")"; [ "$w" -lt 40 ] && w=40; echo "$w"; }
 hr()   { local w n; w="$(width)"; n=$((w-1)); printf '%s' "$D"; local i=0; while [ $i -lt $n ]; do printf '─'; i=$((i+1)); done; printf '%s\n' "$R"; }
 trunc(){ local s="$1" n="$2"; [ ${#s} -gt "$n" ] && printf '%s…' "${s:0:$((n-1))}" || printf '%s' "$s"; }
 short_path() { case "$1" in "$HOME"*) printf '~%s' "${1#$HOME}" ;; *) printf '%s' "$1" ;; esac; }
@@ -238,6 +239,19 @@ loops_menu() {
   esac
 }
 
+# ---------- editor + diff ----------
+EDITOR_CMD="${HUD_EDITOR:-}"   # set HUD_EDITOR=cursor in your shell to override
+[ -z "$EDITOR_CMD" ] && { command -v code >/dev/null && EDITOR_CMD="code" || { command -v cursor >/dev/null && EDITOR_CMD="cursor"; }; }
+open_editor() {
+  [ -n "$EDITOR_CMD" ] || { LAST="No cursor/code command found. Install the shell command from the editor's command palette."; return 0; }
+  if [ -n "$DIR" ] && [ -f "$DIR/spec.md" ]; then "$EDITOR_CMD" "$ROOT" "$DIR/spec.md" >/dev/null 2>&1 & else "$EDITOR_CMD" "$ROOT" >/dev/null 2>&1 & fi
+  LAST="Opened $NAME in $EDITOR_CMD (Source Control tab shows the diff; cmd+shift+v previews .md)"
+}
+show_diff() {
+  [ "$IS_GIT" = 1 ] || { LAST="Not a git repo: no diff to show"; return 0; }
+  run_here_or_pane "git -c color.ui=always --no-pager diff --stat; echo; git -c color.ui=always diff | less -R"
+}
+
 # ---------- render ----------
 meter() {
   local cur="$1" i=1 out="" names="intent spec ready implement qa done measure"
@@ -302,12 +316,12 @@ render() {
   hr
   # keys
   local tgt; tgt="$([ "$TARGET" = pane ] && echo 'new pane' || echo 'here')"
-  if [ "$w" -ge 105 ]; then
-    printf '%s run #1  %s pick  %s loops  %s find skill  %s change  %s target: %s  %s refresh  %s quit\n' \
-      "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
+  if [ "$w" -ge 125 ]; then
+    printf '%s run #1  %s pick  %s loops  %s find skill  %s editor  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' \
+      "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)" "$(K e)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
   else
     printf '%s run #1  %s pick  %s loops  %s find skill\n' "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)"
-    printf '%s change  %s target: %s  %s refresh  %s quit\n' "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
+    printf '%s editor  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' "$(K e)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
   fi
   [ -n "${LAST:-}" ] && printf '%s● %s%s\n' "$GRN" "$(trunc "$LAST" $((w-3)))" "$R"
 }
@@ -342,6 +356,8 @@ while :; do
     1|2|3|4) run_sug "$key" ;;
     l) loops_menu ;;
     s) skill_finder ;;
+    e) open_editor ;;
+    d) show_diff ;;
     t) [ "$TARGET" = pane ] && TARGET=here || { [ "$IN_HERDR" = 1 ] && TARGET=pane || LAST="Not inside Herdr: target stays here"; } ;;
     c) echo; i=1; for d in "$ROOT"/docs/changes/*/; do [ -d "$d" ] || continue; printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "${d%/}")"; i=$((i+1)); done
        printf '> '; read -r n; j=1; for d in "$ROOT"/docs/changes/*/; do [ -d "$d" ] || continue; [ "$j" = "$n" ] && DIR="${d%/}"; j=$((j+1)); done ;;

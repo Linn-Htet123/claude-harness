@@ -63,6 +63,8 @@ Refreshes itself every 5 s.
 | `n` | run suggestion #1 · `1`-`4` run that one |
 | `l` | agent loops: 1 ticket · 2 bug · 3 PR babysitter · 4 QA sweep · 5 measure sweep · 6 verify branch · 7 wayfinder · 8 onboard |
 | `s` | find a skill by word, pick a number, add arguments (130+ skills) |
+| `e` | open the repo (and the current spec.md) in VS Code — its Source Control tab shows every change Claude made; `cmd+shift+v` previews a .md file |
+| `d` | git diff in a pane (stat + full diff, `q` to close) |
 | `c` | change folder · `t` target (this pane / new Herdr pane) · `r` refresh · `q` quit |
 
 `hud --skills <word>` from a shell lists matching skills. Old HUD on screen? `q` then `hud`.

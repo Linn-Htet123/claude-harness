@@ -122,6 +122,8 @@ bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/MMV-123-slug
 | `1` `2` `3` `4` | run that suggestion |
 | `l` | **agent loops**: 1 ticket loop · 2 bug loop (triage → test-first fix → PR) · 3 PR babysitter (every 10 min) · 4 QA sweep · 5 measure sweep · 6 verify branch · 7 wayfinder · 8 onboard repo |
 | `s` | **find a skill**: type a word (e.g. `review`, `deploy`, `test`), pick a number, add arguments. Searches all 130+ installed skills (yours, project, plugins) |
+| `e` | open the repo + current spec in **VS Code**. Source Control tab = all changes; `cmd+shift+v` = markdown preview |
+| `d` | git diff in a pane (`q` closes it) |
 | `c` | switch to another change folder |
 | `t` | target: run in **this pane** or in a **new Herdr pane** below (default inside Herdr: new pane, so the HUD stays visible) |
 | `r` | refresh (also re-reads the PR) |
