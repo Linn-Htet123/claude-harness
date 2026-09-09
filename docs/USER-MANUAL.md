@@ -110,21 +110,24 @@ bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/MMV-123-slug
 
 ## 4. The HUD (dashboard)
 
-`hud` shows: workspace, branch, worktree, the 7-stage meter, current stage, next action,
-scenario counts, gate status (READY ✓ or not), and the tickets table.
+`hud` shows three panels:
+
+- **NOW** — open change folders and their stage, git state (uncommitted files, last commit, PR + CI), which agents run in this Herdr workspace, and the stack it detected with matching skills.
+- **LIFECYCLE** — the 7-stage meter for the current change, gate status (READY ✓), scenario counts, edge scenarios that have **no test yet**, tickets done.
+- **SUGGESTED NEXT** — up to 4 ranked things to run, each with the exact command under it. Examples: "Continue MMV-123 → Step 3 Ready", "Edge scenarios without a test: S2 → run QA", "3 uncommitted files → open a PR", "PR CI is red → babysit it", "No CLAUDE.md → harness-init".
 
 | Key | Does |
 |---|---|
-| `n` | next action: opens Claude with `/ticket <folder>` (asks for a ticket id if there is no folder yet) |
-| `g` | gate check (the 13 Definition-of-Ready checks) |
-| `s` | pick a skill: ticket, qa, measure, tdd-loop, ship-it, triage-bug, grill-me, wayfinder |
+| `n` | run suggestion #1 |
+| `1` `2` `3` `4` | run that suggestion |
+| `l` | **agent loops**: 1 ticket loop · 2 bug loop (triage → test-first fix → PR) · 3 PR babysitter (every 10 min) · 4 QA sweep · 5 measure sweep · 6 verify branch · 7 wayfinder · 8 onboard repo |
+| `s` | **find a skill**: type a word (e.g. `review`, `deploy`, `test`), pick a number, add arguments. Searches all 130+ installed skills (yours, project, plugins) |
 | `c` | switch to another change folder |
-| `r` | refresh |
+| `t` | target: run in **this pane** or in a **new Herdr pane** below (default inside Herdr: new pane, so the HUD stays visible) |
+| `r` | refresh (also re-reads the PR) |
 | `q` | quit |
 
-`hud docs/changes/MMV-123-slug` opens a specific folder. With no argument it picks the newest.
-
----
+From a normal terminal: `hud --skills review` lists matching skills and exits.
 
 ## 5. Things you can type inside Claude
 

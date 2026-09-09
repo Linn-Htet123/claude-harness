@@ -102,7 +102,7 @@ or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
 | `@scout` | Read-only research worker. Writes `research.md`, returns 5 lines. Keeps your main context small (Anthony's "thin coordinator"). |
 | `/measure` | Checks each hypothesis in PostHog, writes learnings, adds production edge cases to the spec. |
 | `guardrails.sh` | The safety rules as code. Tested with 28 cases (section 6). |
-| `hud` | av-style dashboard for a Herdr/tmux pane: lifecycle meter, next action, gate, tickets; keys launch Claude with a skill (section 2b). |
+| `hud` | dashboard for a Herdr/tmux pane: NOW / LIFECYCLE / SUGGESTED NEXT panels, ranked suggestions, skill finder (`s`, 130+ skills), agent loops menu (`l`), runs Claude in a new Herdr pane (`t`). `hud --skills <word>` from a shell. |
 | `notify.sh` | macOS banner + Glass sound when Claude needs permission or is waiting. |
 | Stop hook | Hero.aiff ding when a turn ends (Anthony's ding). Delete the `Stop` block in settings if it annoys you. |
 | `statusline.sh` | `Fable 5.1 \| ctx 37% [###.......] \| branch \| $0.42`. Warns at 40% (compact then). |
