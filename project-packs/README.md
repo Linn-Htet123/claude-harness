@@ -22,7 +22,21 @@ project-packs/
 | `docs/changes/README.md` | **yes** | explains the per-ticket folder convention (`/ticket`). |
 | `CLAUDE.md` | **yes** | see `templates/CLAUDE.md.template` at the harness root; keep it under 150 lines. |
 
-## Use
+## Use — one command for ANY repo (new or existing)
+
+```bash
+harness-init ~/Workspace/new-thing                 # GitHub Issues (default)
+harness-init ~/Workspace/new-thing --tracker linear
+```
+`harness-init` = `project-packs/init.sh`. Idempotent: it never overwrites, so re-run it any time.
+It makes the repo, `CLAUDE.md` (template), `.claude/rules/`, `.claude/launch.json`, `.mcp.json`,
+`.worktreeinclude`, `docs/changes/`, `docs/agents/issue-tracker.md`, `docs/decisions/`, and the
+`.gitignore` lines. Then run `/onboard-repo` inside Claude to fill `CLAUDE.md` from the real code.
+
+A `SessionStart` hook (`hooks/session-start.sh`) tells Claude when a repo is missing
+`CLAUDE.md` or `docs/changes/`, so Claude offers `harness-init` once.
+
+## Use — by hand
 
 ```bash
 # 1. local, safe parts (rules + launch.json). Says what it did.

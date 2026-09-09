@@ -76,6 +76,17 @@ table — the same shape as Keolo's `av` screen. Keys:
 
 Phone: `/remote-control` inside the Claude pane, or the Moshi app over SSH.
 
+## 2c. Any future project (one command)
+
+```bash
+harness-init ~/Workspace/new-thing            # or --tracker linear
+cd ~/Workspace/new-thing && claude            # then type /onboard-repo
+```
+`harness-init` creates the repo layer (CLAUDE.md template, rules, launch.json, .mcp.json,
+.worktreeinclude, docs/changes, docs/agents, docs/decisions, .gitignore lines). It never overwrites.
+If you forget, a `SessionStart` hook makes Claude offer it once when a repo has no `CLAUDE.md`
+or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
+
 ## 3. What each new piece does
 
 | Piece | One line |
@@ -98,7 +109,9 @@ Phone: `/remote-control` inside the Claude pane, or the Moshi app over SSH.
 | Playwright MCP | `claude mcp add --scope user playwright` done. Headless, isolated. `@qa` uses it. |
 | `.claude/rules/` in MMV | `frontend.md`, `backend.md`, `db.md` load only when you touch those paths. Gitignored, so local only. |
 | `.claude/launch.json` in MMV | Lets the desktop Browser pane start becca (3001) / dashboard (3000). |
-| `project-packs/apply.sh` | `apply.sh ~/Workspace/any-repo` copies rules + launch.json into a new project. |
+| `project-packs/apply.sh` | copies rules + launch.json only. |
+| `harness-init` (`project-packs/init.sh`) | one command to set up any repo, new or existing. Never overwrites. |
+| `hooks/session-start.sh` | reminds Claude to offer `harness-init` when a repo has no CLAUDE.md / docs/changes. Silent otherwise. |
 
 ## 4. What I changed on your Mac (all reversible)
 

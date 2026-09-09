@@ -29,7 +29,7 @@ Also install the two plugin packs inside Claude Code:
 | Unclear request | `/grill-me` |
 | Requirements | `/spec-first` |
 | Plan | `@planner` |
-| New repo | `/onboard-repo` |
+| New repo | `harness-init <path>` then `/onboard-repo` |
 | Build | `/tdd-loop` |
 | Test | `@tester` |
 | QA against the spec | `/qa` or `@qa` |
