@@ -195,7 +195,18 @@ Too noisy? Open `~/.claude/settings.json` and delete the `Stop` block (turn ding
 
 ---
 
-## 8. Two projects at the same time
+## 8. Two or three projects at the same time
+
+**One command:**
+```bash
+harness-up ~/Workspace/MMV/manifest-movies-next ~/Workspace/triosys/massive-qr ~/Workspace/triosys/lovememora
+```
+It makes one Herdr workspace per repo, splits it, starts `claude` on the left and `hud` on the right.
+Repos that already have a workspace are skipped. Add `--no-claude` if you want to start Claude yourself.
+Then type `herdr` and press `ctrl+b` `w` to jump between the three.
+
+**The rhythm:** give each Claude one ticket (`/ticket ...`). Each one stops after every step.
+Work on A, hear the ding from B, switch (`ctrl+b` `w`), say `go`, switch back. The stops are your sync points.
 
 - Different repos: one Herdr workspace each. `ctrl+b` `w` to switch.
 - Same repo, two tasks: `herdr worktree create --branch larry/mmv-123` → opens as its own workspace with its own copy of the code. Or `claude --worktree mmv-123`.

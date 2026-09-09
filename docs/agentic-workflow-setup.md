@@ -111,6 +111,7 @@ or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
 | `.claude/launch.json` in MMV | Lets the desktop Browser pane start becca (3001) / dashboard (3000). |
 | `project-packs/apply.sh` | copies rules + launch.json only. |
 | `harness-init` (`project-packs/init.sh`) | one command to set up any repo, new or existing. Never overwrites. |
+| `harness-up` (`project-packs/up.sh`) | open N repos in Herdr at once: workspace + split + `claude` \| `hud` each. Uses the Herdr JSON CLI. |
 | `hooks/session-start.sh` | reminds Claude to offer `harness-init` when a repo has no CLAUDE.md / docs/changes. Silent otherwise. |
 
 ## 4. What I changed on your Mac (all reversible)

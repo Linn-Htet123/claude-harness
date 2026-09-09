@@ -36,6 +36,12 @@ It makes the repo, `CLAUDE.md` (template), `.claude/rules/`, `.claude/launch.jso
 A `SessionStart` hook (`hooks/session-start.sh`) tells Claude when a repo is missing
 `CLAUDE.md` or `docs/changes/`, so Claude offers `harness-init` once.
 
+## Open several projects in Herdr
+
+```bash
+harness-up ~/Workspace/a ~/Workspace/b ~/Workspace/c   # one workspace each: claude | hud
+```
+
 ## Use — by hand
 
 ```bash

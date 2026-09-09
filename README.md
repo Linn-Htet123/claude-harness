@@ -26,6 +26,7 @@ Also install the two plugin packs inside Claude Code:
 |---|---|
 | **Whole ticket, start to finish** | `/ticket MMV-123` (Intent → Spec → Ready → Implement → QA → Done → Measure) |
 | Dashboard next to Claude (Herdr pane) | `hud` |
+| Open 3 projects in Herdr at once | `harness-up <repo> <repo> <repo>` |
 | Unclear request | `/grill-me` |
 | Requirements | `/spec-first` |
 | Plan | `@planner` |
