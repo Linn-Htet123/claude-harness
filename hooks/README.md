@@ -1,69 +1,30 @@
-# Hooks — currently OFF
+# Hooks — ON since 2026-09-09
 
-Nothing in this folder runs. `guardrails.sh` is not wired to anything.
+Wired in `~/.claude/settings.json` (backup in `~/.claude/backups/`).
 
-## Why hooks exist
+| Hook | Event | What it does |
+|---|---|---|
+| `guardrails.sh` | `PreToolUse` on `Bash\|Read` | denies: push to main/master, force push, PR merge via gh, schema push, `rm -rf ~`, reading real `.env` files |
+| `notify.sh` | `Notification` (`permission_prompt`, `idle_prompt\|agent_needs_input`) | macOS banner + Glass sound "Claude needs your permission / is waiting for you" |
+| (inline) | `Stop` | plays Hero.aiff — the "ding" when Claude finishes a turn |
+| `statusline.sh` | `statusLine` | `model \| ctx 37% [###.......] \| branch \| $cost` — warns at 40% |
 
-A rule written in `CLAUDE.md` is **advice**. Claude can decide to ignore it.
-A hook is **code that runs before the action**. It cannot be talked out of it.
+## Why hooks
 
-From Anthropic's docs:
+A rule in `CLAUDE.md` is **advice**. A hook is **code that runs before the action** and cannot be talked out of.
 
-> *"Unlike CLAUDE.md instructions which are advisory, hooks are deterministic
-> and guarantee the action happens."*
-
-## What guardrails.sh would block
-
-Only 4 things. Nothing you would type on purpose:
-
-1. `git push --force` to `main` / `master`
-2. `gh pr merge` (a person merges, not the agent)
-3. Reading `.env` files into context (secret leak)
-4. `rm -rf /` and friends
-
-Everything else stays fast and light.
-
-## How to switch it on
-
-Add this to your settings file - your user config
-(`~/.claude/settings.json`, or whichever `CLAUDE_CONFIG_DIR` you use), or a
-single project's `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$HOME/GITHUB/claude-harness/hooks/guardrails.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-Then restart Claude Code.
-
-## How to test it before trusting it
+## Test
 
 ```bash
-echo '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' \
-  | ./guardrails.sh
+./test-guardrails.sh
+echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}' | ./guardrails.sh   # -> deny JSON
+echo '{"tool_name":"Bash","tool_input":{"command":"pnpm test"}}' | ./guardrails.sh             # -> nothing
+echo '{"cwd":"/tmp"}' | ./notify.sh "test"                                                      # -> banner
 ```
 
-You should see a JSON `deny` response.
+If the banner does not show: System Settings → Notifications → Script Editor → Allow.
 
-```bash
-echo '{"tool_name":"Bash","tool_input":{"command":"npm test"}}' | ./guardrails.sh
-```
+## Turn one off
 
-You should see nothing (allowed).
-
-## How to switch it off again
-
-Delete the `hooks` block from your settings file. That is all.
+Delete its block from the `hooks` key in `~/.claude/settings.json`, restart Claude Code.
+To remove the Stop "ding" only, delete the `Stop` block.

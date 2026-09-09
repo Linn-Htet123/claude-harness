@@ -1,0 +1,5 @@
+.env
+.env.local
+apps/becca/.env.local
+apps/dashboard/.env.local
+backend/.env

@@ -1,32 +1,41 @@
 #!/usr/bin/env bash
-# Prove the guardrail does what it says before you trust it.
-#   ./hooks/test-guardrails.sh
-H="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/guardrails.sh"
+G="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/guardrails.sh"
 PASS=0; FAIL=0
-t(){ exp="$3"; raw=$(printf '%s' "$1" | "$H")
- if [ -z "$raw" ]; then got=allow; else got=$(printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'); fi
- if [ "$got" = "$exp" ]; then PASS=$((PASS+1)); printf 'ok    %-40s %s\n' "$2" "$got"
- else FAIL=$((FAIL+1)); printf 'FAIL  %-40s got=%s want=%s\n' "$2" "$got" "$exp"; fi; }
-
-echo "--- must BLOCK ---"
-t '{"tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' 'force push main' deny
-t '{"tool_name":"Bash","tool_input":{"command":"git push -f origin master"}}' 'force push master' deny
-t '{"tool_name":"Bash","tool_input":{"command":"gh pr merge 42 --squash"}}' 'gh pr merge' deny
-t '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}' 'cat .env' deny
-t '{"tool_name":"Bash","tool_input":{"command":"cat backend/.env.production"}}' 'cat .env.production' deny
-t '{"tool_name":"Bash","tool_input":{"command":"head -5 .env.local"}}' 'head .env.local' deny
-t '{"tool_name":"Read","tool_input":{"file_path":"/app/.env.local"}}' 'Read .env.local' deny
-t '{"tool_name":"Bash","tool_input":{"command":"rm -rf ~"}}' 'rm -rf ~' deny
-echo "--- must ALLOW ---"
-t '{"tool_name":"Bash","tool_input":{"command":"npm test"}}' 'npm test' allow
-t '{"tool_name":"Bash","tool_input":{"command":"git push origin feat/login"}}' 'push a branch' allow
-t '{"tool_name":"Bash","tool_input":{"command":"gh pr create --fill"}}' 'gh pr create' allow
-t '{"tool_name":"Bash","tool_input":{"command":"rm -rf node_modules"}}' 'rm -rf node_modules' allow
-t '{"tool_name":"Bash","tool_input":{"command":"cat .env.example"}}' 'cat .env.example' allow
-t '{"tool_name":"Bash","tool_input":{"command":"cp .env.example .env"}}' 'cp .env.example .env' allow
-t '{"tool_name":"Read","tool_input":{"file_path":".env.example"}}' 'Read .env.example' allow
-t '{"tool_name":"Read","tool_input":{"file_path":"src/env.ts"}}' 'Read src/env.ts' allow
-t '{"tool_name":"Bash","tool_input":{"command":"git merge feat/login"}}' 'git merge a branch' allow
-t '{"tool_name":"Bash","tool_input":{"command":"git push --force origin feat/x"}}' 'force push a branch' allow
-echo ""; echo "PASS=$PASS  FAIL=$FAIL"
-[ "$FAIL" -eq 0 ]
+t() { # label, expected(deny|allow), json
+  r=$(printf '%s' "$3" | "$G")
+  if [ -n "$r" ]; then got=deny; why="$(echo "$r" | jq -r .hookSpecificOutput.permissionDecisionReason | cut -c1-58)"; else got=allow; why=""; fi
+  if [ "$got" = "$2" ]; then PASS=$((PASS+1)); mark="ok  "; else FAIL=$((FAIL+1)); mark="BAD "; fi
+  printf '%s %-46s -> %-5s %s\n' "$mark" "$1" "$got" "$why"
+}
+b() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1"; }
+r() { printf '{"tool_name":"Read","tool_input":{"file_path":"%s"}}' "$1"; }
+t "push origin main"                 deny  "$(b 'git push origin main')"
+t "push HEAD:master"                 deny  "$(b 'git push -u origin HEAD:master')"
+t "force push dev"                   deny  "$(b 'git push --force origin dev')"
+t "push feat/x-main (allowed)"       allow "$(b 'git push -u origin feat/x-main')"
+t "push larry/fix (allowed)"         allow "$(b 'git push -u origin larry/fix')"
+t "gh pr merge"                      deny  "$(b 'gh pr merge 42 --squash')"
+t "git merge main into feature"      allow "$(b 'git merge main')"
+t "pnpm run db:push"                 deny  "$(b 'cd apps/dashboard && pnpm run db:push')"
+t "npx drizzle-kit push"             deny  "$(b 'npx drizzle-kit push')"
+t "prisma db push"                   deny  "$(b 'npx prisma db push')"
+t "pnpm run db:migrate"              allow "$(b 'pnpm run db:migrate')"
+t "rm -rf ~"                         deny  "$(b 'rm -rf ~')"
+t "rm -rf /"                         deny  "$(b 'rm -rf /')"
+t "rm -rf dist"                      allow "$(b 'rm -rf dist')"
+t "cat .env"                         deny  "$(b 'cat .env')"
+t "cat apps/becca/.env.local"        deny  "$(b 'cat apps/becca/.env.local')"
+t "head -n 5 .env"                   deny  "$(b 'head -n 5 .env')"
+t "tail .env | grep X"               deny  "$(b 'tail .env | grep X')"
+t "cat .env.example"                 allow "$(b 'cat .env.example')"
+t "heredoc mentioning .env"          allow "$(b 'cat > README.md <<EOF\ncopy .env into place\nEOF')"
+t "cat notes | grep .env"            allow "$(b 'cat notes.md | grep .env')"
+t "grep NEON .env"                   allow "$(b 'grep NEON .env')"
+t "printf .env > .worktreeinclude"   allow "$(b 'printf .env > .worktreeinclude')"
+t "Read .env"                        deny  "$(r '/x/.env')"
+t "Read .env.local"                  deny  "$(r '/x/.env.local')"
+t "Read .env.example"                allow "$(r '/x/.env.example')"
+t "pnpm test"                        allow "$(b 'pnpm test')"
+t "git push (no target)"             allow "$(b 'git push')"
+echo; echo "passed=$PASS failed=$FAIL"
+[ "$FAIL" = 0 ]
