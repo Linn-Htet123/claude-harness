@@ -2,7 +2,7 @@
 
 A complete SDLC setup for Claude Code. Install once, works in every project.
 
-**New here? Read [TUTORIAL.md](./TUTORIAL.md).**
+**New here? Read [docs/USER-MANUAL.md](./docs/USER-MANUAL.md) (how to use it day to day) and [TUTORIAL.md](./TUTORIAL.md) (how it is built).**
 
 ## Install
 
