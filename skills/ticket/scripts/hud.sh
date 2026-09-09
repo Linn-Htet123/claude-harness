@@ -9,7 +9,9 @@
 # Run it in a Herdr/tmux pane next to your `claude` pane.
 set -uo pipefail
 
-S="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# resolve the real file even when called through a symlink (e.g. /opt/homebrew/bin/hud)
+SELF="${BASH_SOURCE[0]}"; while [ -L "$SELF" ]; do T="$(readlink "$SELF")"; case "$T" in /*) SELF="$T" ;; *) SELF="$(dirname "$SELF")/$T" ;; esac; done
+S="$(cd "$(dirname "$SELF")" && pwd)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ONCE=0; DIR=""
 for a in "$@"; do case "$a" in --once) ONCE=1 ;; *) DIR="$a" ;; esac; done

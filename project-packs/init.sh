@@ -19,7 +19,9 @@ TRACKER="github"
 shift || true
 while [ $# -gt 0 ]; do case "$1" in --tracker) TRACKER="$2"; shift 2 ;; *) shift ;; esac; done
 
-H="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# resolve the real file even when called through a symlink (e.g. /opt/homebrew/bin/harness-init)
+SELF="${BASH_SOURCE[0]}"; while [ -L "$SELF" ]; do T="$(readlink "$SELF")"; case "$T" in /*) SELF="$T" ;; *) SELF="$(dirname "$SELF")/$T" ;; esac; done
+H="$(cd "$(dirname "$SELF")/.." && pwd)"
 T="$H/project-packs/_template"
 REPO="${REPO/#\~/$HOME}"
 mkdir -p "$REPO"; REPO="$(cd "$REPO" && pwd)"
@@ -33,7 +35,7 @@ echo "==> $REPO"
 if [ ! -d "$REPO/.git" ]; then git -C "$REPO" init -q && echo "  git init"; fi
 
 # 2. CLAUDE.md
-if [ ! -e "$REPO/CLAUDE.md" ]; then
+if [ ! -s "$REPO/CLAUDE.md" ]; then   # missing OR empty
   sed "s/<PROJECT NAME>/$NAME/" "$H/templates/CLAUDE.md.template" > "$REPO/CLAUDE.md"
   echo "  added  CLAUDE.md (template — run /onboard-repo to fill it)"
 else echo "  keep   CLAUDE.md"; fi
