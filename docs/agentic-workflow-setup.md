@@ -45,6 +45,37 @@ Lost? `bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/<folder>` 
 **Small fix?** Skip the loop. `/triage-bug`, fix, `/ship-it`.
 **Too big for one session?** `/wayfinder` first (needs the tracker doc, see section 5), then `/to-spec`, then `/ticket` per slice.
 
+## 2b. Herdr + the HUD (Anthony's screen, Keolo's dashboard)
+
+Installed 2026-09-10: `herdr 0.9.0` (brew), the Claude integration (adds one `SessionStart` hook,
+your other hooks untouched), a starter `~/.config/herdr/config.toml` (resume on restart, sound,
+system toasts), and a `hud` command (symlink to `skills/ticket/scripts/hud.sh`).
+
+**Start it (once per day):**
+```bash
+cd ~/Workspace/MMV/manifest-movies-next && herdr
+```
+Inside Herdr (prefix is `ctrl+b`, like tmux):
+- `prefix+shift+n` → new workspace for this repo (one per repo).
+- `prefix+v` → split. Left pane: `claude`. Right pane: `hud`.
+- `prefix+w` → jump between workspaces. `prefix+q` → detach; agents keep running. `herdr` → come back.
+- Another repo? `cd` there, `prefix+shift+n` again. All spaces show in the sidebar with the agent state (working / blocked / done).
+- Parallel task in one repo: `herdr worktree create --branch larry/mmv-123` → opens as its own workspace.
+
+**The HUD** (`hud [docs/changes/<folder>]`) shows workspace / branch / worktree, the 7-stage
+lifecycle meter, current stage, next action, scenario counts, the gate status, and the tickets
+table — the same shape as Keolo's `av` screen. Keys:
+
+| key | does |
+|---|---|
+| `n` | next action → runs `claude "/ticket <folder>"` (or asks for a ticket id if no folder yet) |
+| `g` | gate check → `ready-check.sh` |
+| `s` | run a skill (ticket, qa, measure, tdd-loop, ship-it, triage-bug, grill-me, wayfinder) |
+| `c` | switch to another change folder |
+| `r` | refresh, `q` quit |
+
+Phone: `/remote-control` inside the Claude pane, or the Moshi app over SSH.
+
 ## 3. What each new piece does
 
 | Piece | One line |
@@ -59,7 +90,8 @@ Lost? `bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/<folder>` 
 | `@verifier` | Fresh eyes: every S-id has a test, edge tests assert failure, diff matches spec, no ticket refs in code, no secrets. |
 | `@scout` | Read-only research worker. Writes `research.md`, returns 5 lines. Keeps your main context small (Anthony's "thin coordinator"). |
 | `/measure` | Checks each hypothesis in PostHog, writes learnings, adds production edge cases to the spec. |
-| `guardrails.sh` | The safety rules as code. Tested with 20 cases (section 6). |
+| `guardrails.sh` | The safety rules as code. Tested with 28 cases (section 6). |
+| `hud` | av-style dashboard for a Herdr/tmux pane: lifecycle meter, next action, gate, tickets; keys launch Claude with a skill (section 2b). |
 | `notify.sh` | macOS banner + Glass sound when Claude needs permission or is waiting. |
 | Stop hook | Hero.aiff ding when a turn ends (Anthony's ding). Delete the `Stop` block in settings if it annoys you. |
 | `statusline.sh` | `Fable 5.1 \| ctx 37% [###.......] \| branch \| $0.42`. Warns at 40% (compact then). |
@@ -87,7 +119,7 @@ Nothing was pushed, merged, deployed, or written to the team repo's tracked file
 1. **Commit this repo** so the harness is saved: `cd ~/GITHUB/claude-harness && git add -A && git commit -m "harness: ticket loop, qa/verifier/scout, hooks on"`.
 2. **PR the MMV tracked pack** (`project-packs/manifest-movies-next/`): `.mcp.json`, `.worktreeinclude`, `docs/agents/issue-tracker.md`, `docs/changes/README.md`. Read them first; they touch the team repo.
 3. **`/setup-matt-pocock-skills`** inside MMV, pick Linear. That makes `/wayfinder`, `/to-spec`, `/to-tickets`, `/triage` work (Anthony's map). It writes into the repo → PR.
-4. **Herdr** (what Anthony runs): `brew install herdr`, then `herdr integration install claude`, then `herdr`. One space per repo. Free, Apache 2.0, ~37k stars, v0.9 (young; has bugs). Try one week. If the tmux-style prefix keys annoy you, stay on the desktop app + `claude --remote-control`.
+4. ~~Herdr~~ — installed 2026-09-10, see section 2b. If the tmux-style prefix keys annoy you after a week, stay on the desktop app + `claude --remote-control`.
 5. **PostHog plugin** for `/measure`: `claude plugin install posthog` (gives `/posthog:experiments`, `/posthog:surveys`). The PostHog MCP you already have works too.
 6. **Ask Keolo** for the `av` repo invite; his loop is what `/ticket` copies, so contributing there will be easy. It is Go; you have `go` installed.
 7. **Optional:** `brew install terminal-notifier` for nicer banners with the Claude icon; `openspec` CLI (`npm i -g @fission-ai/openspec`) if the team wants its `/opsx:*` commands. Not needed for the loop.
