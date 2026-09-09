@@ -4,6 +4,7 @@
 #   hud [docs/changes/<ID>-<slug>] [--once]
 #
 # Panels: NOW (what is going on) · LIFECYCLE (the ticket loop) · SUGGESTED NEXT (ranked)
+# Auto-refreshes every 5 s (PR/CI about once a minute).
 # Keys:   n = run suggestion 1   1-4 = run that suggestion   l = agent loops   s = find a skill
 #         c = change folder   t = target (this pane / new Herdr pane)   r = refresh   q = quit
 # Bash 3 compatible (macOS). Width-aware. Works outside Herdr too (runs Claude in the foreground).
@@ -167,7 +168,7 @@ run_sug() {
   case "$c" in
     claude:*) run_claude "${c#claude:}" ;;
     shell:*)  run_here_or_pane "${c#shell:}" ;;
-    ask:*)    printf '\nTicket id (MMV-123, 42, ...): '; read -r tid; [ -n "$tid" ] && run_claude "${c#ask:} $tid" ;;
+    ask:*)    printf '\nTicket id, or just say what you want to do (e.g. \"add a login page\"): '; read -r tid; [ -n "$tid" ] && run_claude "${c#ask:} $tid" ;;
   esac
 }
 
@@ -226,7 +227,7 @@ loops_menu() {
   printf '  %s8%s Onboard repo     read the code, write CLAUDE.md\n' "$YEL" "$R"
   printf '> '; read -r n
   case "$n" in
-    1) if [ -n "$DIR" ]; then run_claude "/ticket $rel"; else printf 'Ticket id: '; read -r t; [ -n "$t" ] && run_claude "/ticket $t"; fi ;;
+    1) if [ -n "$DIR" ]; then run_claude "/ticket $rel"; else printf 'Ticket id, or what you want to do: '; read -r t; [ -n "$t" ] && run_claude "/ticket $t"; fi ;;
     2) printf 'Describe the bug in one line: '; read -r bug; [ -n "$bug" ] && run_claude "/triage-bug $bug — after the cause is found, fix it with /tdd-loop, then /ship-it. Stop after each skill and tell me what you found." ;;
     3) run_claude "/loop 10m Check the open PR for this branch with gh. If CI is red, fix it and push. If there are review comments, answer or apply them. Otherwise say: quiet." ;;
     4) run_claude "For every folder in docs/changes/ whose index.md has stage implement or qa, dispatch the qa agent with that folder and collect the pass/fail tables into one summary. Report only." ;;
@@ -328,13 +329,15 @@ if [ -n "$SKILLS_ONLY" ]; then
 fi
 
 # ---------- main loop ----------
-LAST=""
+LAST=""; TICK=0
 gather; refresh_pr; suggest
 while :; do
   render
   [ "$ONCE" = 1 ] && exit 0
-  IFS= read -r -s -n1 key
+  key=""; IFS= read -r -s -n1 -t 5 key || key=""      # auto-refresh every 5 s when idle
+  TICK=$((TICK+1)); [ $((TICK % 12)) = 0 ] && refresh_pr   # PR/CI re-check about once a minute
   case "$key" in
+    "") ;;
     n) run_sug 1 ;;
     1|2|3|4) run_sug "$key" ;;
     l) loops_menu ;;

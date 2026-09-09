@@ -1,7 +1,7 @@
 ---
 name: ticket
 description: Run one ticket (Linear, GitHub Issue, Jira) through the whole loop - Intent -> Spec & Design (grilling) -> Ready -> Implement (TDD) -> QA -> Done (PR) -> Measure. Keeps everything in docs/changes/<ID>-<slug>/ (proposal, research, spec with happy + edge scenarios, design, tickets). One step per turn; Larry says "go" before the next step. Use for any ticket bigger than a one-line fix.
-argument-hint: "[TICKET-ID | TICKET-ID slug | path to docs/changes/<folder>]"
+argument-hint: "[TICKET-ID | plain words describing the work | path to docs/changes/<folder>]"
 disable-model-invocation: true
 ---
 
@@ -36,6 +36,10 @@ Follow the `NEXT:` line. If no folder exists, start at Step 1.
 
 ## Step 1 — Intent
 
+0. **No ticket id, just words?** (e.g. `/ticket add a login page`). That is fine. Make an id:
+   PREFIX = first 2-4 letters of the repo name, upper case (lovememora → `LM`, massive-qr → `MQ`);
+   number = highest existing `docs/changes/PREFIX-<n>-*` + 1, or 1. Slug = 2-4 words from the text.
+   Tell Larry the id you made. Skip reading a tracker; the words are the intent.
 1. Read the ticket with whatever this repo uses (Linear MCP, `gh issue view`, Jira MCP; check CLAUDE.md): title, description, comments, parent, labels.
 2. Read `CLAUDE.md`, and `@explorer` to find the code this touches.
 3. Create the folder:
