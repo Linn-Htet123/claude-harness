@@ -6,7 +6,7 @@
 # Panels: NOW (what is going on) · LIFECYCLE (the ticket loop) · SUGGESTED NEXT (ranked)
 # Auto-refreshes every 5 s (PR/CI about once a minute).
 # Keys:   n = run suggestion 1   1-4 = run that suggestion   l = agent loops   s = find a skill
-#         e = open repo + spec in Cursor/VS Code   d = git diff in a pane
+#         e = open repo + spec in VS Code   o = pick a doc (newest first) and open it   d = git diff in a pane
 #         c = change folder   t = target (this pane / new Herdr pane)   r = refresh   q = quit
 # Bash 3 compatible (macOS). Width-aware. Works outside Herdr too (runs Claude in the foreground).
 set -uo pipefail
@@ -99,6 +99,11 @@ gather() {
   AGENTS=""
   if [ "$IN_HERDR" = 1 ] && command -v herdr >/dev/null; then
     AGENTS="$(herdr pane list 2>/dev/null | jq -r --arg w "$HERDR_WORKSPACE_ID" '[.result.panes[] | select(.workspace_id==$w and .agent!=null) | "\(.agent):\(.agent_status)"] | join("  ")' 2>/dev/null)"
+  fi
+  # recent docs (markdown under docs/ changed in the last 24 h, newest first)
+  RECENT_DOCS=""
+  if [ -d "$ROOT/docs" ]; then
+    RECENT_DOCS="$(find "$ROOT/docs" -name '*.md' -mmin -1440 -not -path '*/node_modules/*' 2>/dev/null | xargs -I{} stat -f '%m %N' {} 2>/dev/null | sort -rn | head -3 | cut -d' ' -f2-)"
   fi
   # stack hints
   STACK=""
@@ -252,6 +257,23 @@ show_diff() {
   run_here_or_pane "git -c color.ui=always --no-pager diff --stat; echo; git -c color.ui=always diff | less -R"
 }
 
+# ---------- doc picker: newest markdown files, one key to open ----------
+open_doc() {
+  local list="${TMPDIR:-/tmp}/hud-docs-$$.txt" n=0 pick f
+  { [ -d "$ROOT/docs" ] && find "$ROOT/docs" -name '*.md' -not -path '*/node_modules/*' 2>/dev/null; } | xargs -I{} stat -f '%m %N' {} 2>/dev/null | sort -rn | head -15 | cut -d' ' -f2- > "$list"
+  if [ ! -s "$list" ]; then LAST="No markdown files under docs/ yet"; rm -f "$list"; return 0; fi
+  printf '\n%sNewest docs%s (number opens it in %s, Enter = back):\n' "$B" "$R" "${EDITOR_CMD:-the terminal}"
+  while IFS= read -r f; do
+    n=$((n+1)); printf '  %s%2d%s %s%-52s%s %s%s%s\n' "$YEL" "$n" "$R" "$WHT" "$(trunc "${f#$ROOT/}" 52)" "$R" "$D" "$(stat -f '%Sm' -t '%b %d %H:%M' "$f" 2>/dev/null)" "$R"
+  done < "$list"
+  printf '> '; IFS= read -r pick
+  [ -n "$pick" ] || { rm -f "$list"; return 0; }
+  f="$(sed -n "${pick}p" "$list")"; rm -f "$list"
+  [ -n "$f" ] || return 0
+  if [ -n "$EDITOR_CMD" ]; then "$EDITOR_CMD" "$f" >/dev/null 2>&1 & LAST="Opened ${f#$ROOT/} in $EDITOR_CMD"
+  else run_here_or_pane "less -R '$f'"; fi
+}
+
 # ---------- render ----------
 meter() {
   local cur="$1" i=1 out="" names="intent spec ready implement qa done measure"
@@ -287,6 +309,11 @@ render() {
     printf '  %sgit:%s %snot a repository → run: git init%s\n' "$GRN" "$R" "$RED" "$R"
   fi
   [ -n "$AGENTS" ] && printf '  %sagents:%s %s\n' "$GRN" "$R" "$AGENTS"
+  if [ -n "$RECENT_DOCS" ]; then
+    printf '  %snew docs:%s' "$GRN" "$R"
+    printf '%s\n' "$RECENT_DOCS" | while IFS= read -r f; do [ -n "$f" ] && printf ' %s▸%s %s' "$D" "$R" "$(trunc "${f#$ROOT/docs/}" 30)"; done
+    printf '   %s(press o to open)%s\n' "$D" "$R"
+  fi
   [ -n "$STACK" ] && printf '  %sstack:%s %s   %s(skills: %s)%s\n' "$GRN" "$R" "$STACK" "$D" "$(stack_skills)" "$R"
   hr
   # LIFECYCLE
@@ -317,11 +344,11 @@ render() {
   # keys
   local tgt; tgt="$([ "$TARGET" = pane ] && echo 'new pane' || echo 'here')"
   if [ "$w" -ge 125 ]; then
-    printf '%s run #1  %s pick  %s loops  %s find skill  %s editor  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' \
-      "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)" "$(K e)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
+    printf '%s run #1  %s pick  %s loops  %s find skill  %s editor  %s docs  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' \
+      "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)" "$(K e)" "$(K o)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
   else
     printf '%s run #1  %s pick  %s loops  %s find skill\n' "$(K n)" "$(K 1-4)" "$(K l)" "$(K s)"
-    printf '%s editor  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' "$(K e)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
+    printf '%s editor  %s docs  %s diff  %s change  %s target: %s  %s refresh  %s quit\n' "$(K e)" "$(K o)" "$(K d)" "$(K c)" "$(K t)" "$tgt" "$(K r)" "$(K q)"
   fi
   [ -n "${LAST:-}" ] && printf '%s● %s%s\n' "$GRN" "$(trunc "$LAST" $((w-3)))" "$R"
 }
@@ -357,6 +384,7 @@ while :; do
     l) loops_menu ;;
     s) skill_finder ;;
     e) open_editor ;;
+    o) open_doc ;;
     d) show_diff ;;
     t) [ "$TARGET" = pane ] && TARGET=here || { [ "$IN_HERDR" = 1 ] && TARGET=pane || LAST="Not inside Herdr: target stays here"; } ;;
     c) echo; i=1; for d in "$ROOT"/docs/changes/*/; do [ -d "$d" ] || continue; printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "${d%/}")"; i=$((i+1)); done

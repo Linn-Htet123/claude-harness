@@ -64,6 +64,7 @@ Refreshes itself every 5 s.
 | `l` | agent loops: 1 ticket · 2 bug · 3 PR babysitter · 4 QA sweep · 5 measure sweep · 6 verify branch · 7 wayfinder · 8 onboard |
 | `s` | find a skill by word, pick a number, add arguments (130+ skills) |
 | `e` | open the repo (and the current spec.md) in VS Code — its Source Control tab shows every change Claude made; `cmd+shift+v` previews a .md file |
+| `o` | pick a doc: lists the newest markdown files under docs/ (reports, specs), press a number, it opens in VS Code. The NOW panel also shows "new docs" changed in the last 24 h |
 | `d` | git diff in a pane (stat + full diff, `q` to close) |
 | `c` | change folder · `t` target (this pane / new Herdr pane) · `r` refresh · `q` quit |
 
