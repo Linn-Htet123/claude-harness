@@ -104,7 +104,7 @@ Sounds: Hero = turn finished; Glass + banner = Claude needs you; Herdr ding = ag
 
 ## Where things live
 
-`~/GITHUB/claude-harness` (git, private remote `Linn-Htet123/claude-harness`; Larry pushes by hand) → symlinked into `~/.claude` by `./install.sh`.
+`~/GITHUB/claude-harness` (git, private remote https://github.com/Linn-Htet123/claude-harness ; Larry pushes by hand) → symlinked into `~/.claude` by `./install.sh`. **New Mac:** `git clone` it, then `./setup-new-mac.sh` (installs everything: brew tools, symlinks, PATH commands, hooks into settings.json with backup, CLAUDE.md, Herdr config + integration, Playwright MCP). Then `/plugin install superpowers` + `mattpocock-skills`, and `/mcp` logins.
 `~/.claude/settings.json` hooks + statusline (backups in `~/.claude/backups/`). `~/.claude/CLAUDE.md` who Larry is + the loop. `<repo>/.claude/rules/` path-scoped rules. `<repo>/docs/changes/` tickets. `<repo>/docs/decisions/` ADRs.
 
 ## Troubleshooting (short)

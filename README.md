@@ -6,6 +6,15 @@ A complete SDLC setup for Claude Code. Install once, works in every project.
 
 ## Install
 
+New Mac, everything at once:
+
+```bash
+git clone https://github.com/Linn-Htet123/claude-harness.git ~/GITHUB/claude-harness
+cd ~/GITHUB/claude-harness && ./setup-new-mac.sh
+```
+
+Just the symlinks:
+
 ```bash
 ./install.sh                                        # into ~/.claude
 ./install.sh ~/.claude-manifest ~/.claude-personal  # multiple accounts

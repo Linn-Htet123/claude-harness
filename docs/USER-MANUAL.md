@@ -259,7 +259,12 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
 ```
 
 To update the harness on this Mac: edit files in `~/GITHUB/claude-harness`, then `git add -A && git commit && git push` (you push; the hook blocks Claude from pushing master).
-On a new Mac: `git clone` it, run `./install.sh`, `brew install herdr`, `herdr integration install claude`.
+**On a new Mac (one command):**
+```bash
+git clone https://github.com/Linn-Htet123/claude-harness.git ~/GITHUB/claude-harness
+cd ~/GITHUB/claude-harness && ./setup-new-mac.sh
+```
+It installs jq/gh/herdr, links skills + agents + hooks, puts `hud` / `harness-init` / `harness-up` on PATH, merges the hooks + statusline into `~/.claude/settings.json` (backup first), installs the global CLAUDE.md and Herdr config if missing, adds the Playwright MCP, and runs the guardrail tests. Then inside Claude: `/plugin install superpowers`, `/plugin install mattpocock-skills`, and `/mcp` to log in to your tools.
 
 ---
 

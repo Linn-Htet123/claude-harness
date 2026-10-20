@@ -1,0 +1,20 @@
+onboarding = false
+# Herdr config — written 2026-09-10 by the claude-harness setup.
+# Docs: https://herdr.dev/docs/config-reference/
+
+[session]
+resume_agents_on_restore = true   # after a reboot, re-open claude --resume <id> in each pane
+
+[ui.sound]
+enabled = true                    # ding when a background agent finishes or needs input
+
+[ui.toast]
+delivery = "system"               # macOS notification too (set "off" to stop)
+delay_seconds = 1
+
+[worktrees]
+directory = "~/.herdr-worktrees"  # where `herdr worktree create --branch x` puts checkouts
+
+[theme]
+name = "dracula"
+auto_switch = false
