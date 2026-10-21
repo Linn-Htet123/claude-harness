@@ -1,6 +1,6 @@
 ---
 name: harness-help
-description: Answer any question about how Larry works with Claude Code - the harness, Herdr (keys, panes, workspaces, fresh start), the hud dashboard, harness-init / harness-up, the /ticket loop and its 7 steps, the docs/changes folder, skills, agents, hooks and what they block, notifications, statusline, where files live, troubleshooting. Use whenever Larry asks "how do I...", "what is...", "which command...", "why is X blocked", or mentions herdr, hud, harness, pane, workspace, the loop, or a skill/agent name - even with typos (herbr, harnes, hub).
+description: Answer any question about how Larry works with Claude Code - the harness, Herdr (keys, panes, workspaces, fresh start), the hud dashboard, harness-init / harness-up, the /ticket loop and its 7 steps, the OpenSpec change folder (openspec/changes/, old docs/changes/), /opsx commands, the review gate, skills, agents, hooks and what they block, notifications, statusline, where files live, troubleshooting. Use whenever Larry asks "how do I...", "what is...", "which command...", "why is X blocked", or mentions herdr, hud, harness, pane, workspace, the loop, or a skill/agent name - even with typos (herbr, harnes, hub).
 ---
 
 # Harness help
@@ -63,7 +63,7 @@ Refreshes itself every 5 s.
 | `n` | run suggestion #1 · `1`-`4` run that one |
 | `l` | agent loops: 1 ticket · 2 bug · 3 PR babysitter · 4 QA sweep · 5 measure sweep · 6 verify branch · 7 wayfinder · 8 onboard |
 | `s` | find a skill by word, pick a number, add arguments (130+ skills) |
-| `e` | open the repo (and the current spec.md) in VS Code — its Source Control tab shows every change Claude made; `cmd+shift+v` previews a .md file |
+| `e` | open the repo (and the current specs/<capability>/spec.md) in VS Code — its Source Control tab shows every change Claude made; `cmd+shift+v` previews a .md file |
 | `o` | pick a doc: lists the newest markdown files under docs/ (reports, specs), press a number, it opens in VS Code. The NOW panel also shows "new docs" changed in the last 24 h |
 | `d` | git diff in a pane (stat + full diff, `q` to close) |
 | `c` | change folder · `t` target (this pane / new Herdr pane) · `r` refresh · `q` quit |
@@ -73,29 +73,32 @@ Refreshes itself every 5 s.
 ## The loop — `/ticket`
 
 `/ticket MMV-123` or `/ticket add a forgot-password page` (plain words are fine; Claude makes an id like `LM-1`).
-Folder: `docs/changes/<ID>-<slug>/` with `index.md` (stage), `proposal.md`, `research.md`, `spec.md`, `design.md`, `tickets.md`, `qa-report.md`.
+Each ticket = one OpenSpec change: `openspec/changes/<id>-<slug>/` (lower case, e.g. `mmv-278-evening-ritual`) with `index.md` (stage), `proposal.md` (why, out of scope, user stories, hypotheses, decision log), `research.md`, `specs/<capability>/spec.md` (delta spec, happy + edge `S1` scenarios), `design.md`, `tasks.md` (slices `## 1. T1 ... (blocked by: ...)` with `- [ ] 1.1` boxes), `qa-report.md`. Old `docs/changes/` folders still work.
+Repo has no `openspec/`? Run once: `openspec init --tools none` (skills and `/opsx:*` are global from the harness).
 
 | Step | Claude | Larry |
 |---|---|---|
 | 1 Intent | reads ticket, makes folder | `go` |
 | 2 Spec & Design | grilling questions, @scout research, writes spec with **happy + edge** scenarios | answer, `go` |
-| 3 Ready | `ready-check.sh` (13 checks) | approve = `go` |
-| 4 Implement | branch, test-first per scenario (`S1 happy:`, `S2 edge:` in test titles) | `go` per ticket row |
+| 3 Ready | `ready-check.sh` (+ `openspec validate`) | approve = `go` |
+| 4 Implement | branch, test-first per scenario (`S1 happy:`, `S2 edge:` in test titles). Small: `/tdd-loop`. Big: `/implement-spec` (parallel worktrees) | `go` per slice |
 | 5 QA | @qa runs scenarios + browser pass, `qa-report.md` | read gaps |
-| 6 Done | @verifier + @reviewer, `/ship-it` PR to base branch, never merges | ask a human to review |
-| 7 Measure | `/measure <folder>` PostHog numbers → learnings, new edge scenarios | read |
+| 6 Done | review gate: @verifier + `/code-review` (risky: `/thermonuclear-review`) + `/ponytail-review`, then `/ship-it` PR to base branch, changelog line in `~/.claude/shared/agent-changelog.md`. Never merges | ask a human to review |
+| 7 Measure | `/measure <folder>` PostHog numbers → learnings, new edge scenarios; then `openspec archive <name> --yes` merges the spec into `openspec/specs/` | read, say "finished" |
 
 Scripts (in `~/.claude/skills/ticket/scripts/`): `new-change.sh`, `ready-check.sh`, `next-step.sh`, `okf-subgraph.sh`, `hud.sh`.
-Small bug: `/triage-bug` → `/tdd-loop` → `/ship-it`. Too big for one session: `/wayfinder` → `/to-spec` → `/ticket`.
+Small change: `/opsx:propose` → `/opsx:apply` → `/opsx:archive`. Small bug: `/triage-bug` → `/tdd-loop` → `/ship-it`. Too big for one session: `/wayfinder` → `/to-spec` → `/ticket`.
 
 ## Skills and agents
 
 Skills: `/ticket /qa /measure /triage-bug /tdd-loop /ship-it /hotfix /postmortem /grill-me /wayfinder /onboard-repo /standup /pm-handoff /ctx /harness-help /herdr` plus Superpowers, Matt Pocock's, Vercel, drawio.
+From Anthony: `/to-spec /to-tickets /implement-spec /thermonuclear-review /ponytail /ponytail-review /two-axis-review` (his code review, renamed so the built-in `/code-review` still works) `/asd-ste100` (simple English) `/duel` (Claude vs Codex, needs `codex login`). Not installed on purpose: fleet, reconcile.
+OpenSpec: skills `openspec-propose/explore/apply-change/update-change/sync-specs/archive-change`, commands `/opsx:propose|explore|apply|update|sync|archive`.
 Agents: `@scout` (research) `@qa` `@verifier` (spec coverage) `@reviewer` (correctness) `@security-reviewer` `@explorer` `@planner` `@tester`.
 
 ## New project
 
-`harness-init <path> [--tracker linear]` → `cd` there → `claude` → `/onboard-repo`. Never overwrites. A SessionStart hook offers this once when a repo lacks CLAUDE.md.
+`harness-init <path> [--tracker linear]` → `cd` there → `claude` → `/onboard-repo`. Never overwrites. It also runs `openspec init --tools none` if `openspec` is on PATH and there is no `openspec/` yet. A SessionStart hook offers this once when a repo lacks CLAUDE.md.
 
 ## Guardrails (hooks, cannot be talked past)
 
@@ -105,7 +108,7 @@ Sounds: Hero = turn finished; Glass + banner = Claude needs you; Herdr ding = ag
 ## Where things live
 
 `~/GITHUB/claude-harness` (git, private remote https://github.com/Linn-Htet123/claude-harness ; Larry pushes by hand) → symlinked into `~/.claude` by `./install.sh`. **New Mac:** `git clone` it, then `./setup-new-mac.sh` (installs everything: brew tools, symlinks, PATH commands, hooks into settings.json with backup, CLAUDE.md, Herdr config + integration, Playwright MCP). Then `/plugin install superpowers` + `mattpocock-skills`, and `/mcp` logins.
-`~/.claude/settings.json` hooks + statusline (backups in `~/.claude/backups/`). `~/.claude/CLAUDE.md` who Larry is + the loop. `<repo>/.claude/rules/` path-scoped rules. `<repo>/docs/changes/` tickets. `<repo>/docs/decisions/` ADRs.
+`~/.claude/settings.json` hooks + statusline (backups in `~/.claude/backups/`). `~/.claude/CLAUDE.md` who Larry is + the loop + ASD-STE100 output style, review before PR (both axes), agent changelog, session journal. `~/.claude/shared/agent-changelog.md` changelog. `~/.claude/shared/journal/` session journal. `~/.claude/commands/opsx/` the /opsx commands (install.sh links command sub-folders). `<repo>/.claude/rules/` path-scoped rules. `<repo>/openspec/changes/` tickets (old: `docs/changes/`). `<repo>/openspec/specs/` living spec library. `<repo>/docs/decisions/` ADRs.
 
 ## Troubleshooting (short)
 

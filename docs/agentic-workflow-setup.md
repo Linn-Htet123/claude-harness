@@ -8,7 +8,7 @@ The meeting had three ideas. Here is how each one landed on your Mac:
 
 | Idea from the meeting | Who said it | What you have now |
 |---|---|---|
-| A fixed loop: **Intent → Spec → Ready → Implement → Measure**, with a folder of docs per ticket (proposal, research, spec with happy + edge cases, design, tickets) | Keolo (his private `av` CLI) | `/ticket <ID>` skill + templates + 4 scripts. Folder: `docs/changes/<ID>-<slug>/` |
+| A fixed loop: **Intent → Spec → Ready → Implement → Measure**, with a folder of docs per ticket (proposal, research, spec with happy + edge cases, design, tickets) | Keolo (his private `av` CLI) | `/ticket <ID>` skill + templates + 4 scripts. Each ticket = one OpenSpec change: `openspec/changes/<id>-<slug>/` (old `docs/changes/` still works). After ship, `openspec archive` merges the spec into `openspec/specs/` |
 | One **coordinator**, sub-agents in worktrees, a project **map** in Linear, a **ding** when an agent needs you | Anthony (pi.dev inside Herdr, `/wayfinder`) | `@scout` `@qa` `@verifier` agents, `/wayfinder` (you already had it), notify + Stop hooks |
 | Engineers own QA; an agent walks the **happy path and the edge cases** | Keolo + Anthony | `@qa` + Playwright MCP; `ready-check.sh` refuses a spec with no edge scenario |
 | Guardrails must be code, not advice | (Claude Code docs) | `guardrails.sh` hook: no push to main, no force push, no PR merge, no schema push, no `rm -rf ~`, no `.env` reads |
@@ -20,6 +20,8 @@ Everything lives in **this repo** (`~/GITHUB/claude-harness`) and is symlinked i
   skills/ticket/     the loop  (SKILL.md, templates/, scripts/)
   skills/qa/         /qa  -> dispatches @qa
   skills/measure/    /measure -> PostHog check, learnings back into the spec
+  skills/openspec-*/  commands/opsx/   OpenSpec skills + /opsx:* commands (global)
+  skills/ponytail*  thermonuclear-review  to-spec  to-tickets  implement-spec  two-axis-review  asd-ste100  duel   (from Anthony)
   agents/qa.md  verifier.md  scout.md        (+ your explorer, planner, reviewer, tester, security-reviewer)
   hooks/guardrails.sh  notify.sh  statusline.sh   (ON in ~/.claude/settings.json)
   project-packs/     per-repo layer: _template/ + manifest-movies-next/ + apply.sh
@@ -33,15 +35,16 @@ Everything lives in **this repo** (`~/GITHUB/claude-harness`) and is symlinked i
 ```
 
 1. Open the repo, type `/ticket MMV-123` (or a GitHub issue number). Claude reads the ticket, makes the folder, fills the "Why". **Stops.**
-2. Say `go`. Claude runs the grilling interview (numbered questions with its recommendation, you answer), sends `@scout` for research, then writes proposal / spec / design / tickets. Every requirement gets an `S1 happy` and an `S2 edge` scenario. **Stops.**
-3. Say `go`. `ready-check.sh` runs (13 checks). You approve the spec = Definition of Ready. Sub-issues go to Linear only after your OK. **Stops.**
-4. Say `go`. Branch or `claude --worktree`, then `/tdd-loop` per scenario. Test titles carry the S-ids. **Stops after each ticket row.**
+2. Say `go`. Claude runs the grilling interview (numbered questions with its recommendation, you answer), sends `@scout` for research, then writes `proposal.md` / `specs/<capability>/spec.md` / `design.md` / `tasks.md` (tracer-bullet slices with `blocked by:` and `- [ ] 1.1` boxes). Every requirement gets an `S1 happy` and an `S2 edge` scenario. **Stops.**
+3. Say `go`. `ready-check.sh` runs (it also runs `openspec validate`). You approve the spec = Definition of Ready. Sub-issues go to Linear only after your OK. **Stops.**
+4. Say `go`. Branch or `claude --worktree`, then `/tdd-loop` per scenario (small work) or `/implement-spec` (big work: one agent per slice in its own worktree). Test titles carry the S-ids. **Stops after each slice.**
 5. Say `go`. `@qa` runs the scenario tests and a live browser pass (Playwright MCP), writes `qa-report.md`. **Stops.**
-6. Say `go`. `@verifier` (spec coverage) + `@reviewer` (correctness), then `/ship-it` → PR to `dev`. Never merges. Linear → In Review. **Stops.**
-7. A few days after deploy: `/measure docs/changes/MMV-123-slug`. PostHog numbers go into `research.md`; production bugs become new edge scenarios.
+6. Say `go`. Review gate, two axes: `@verifier` (spec coverage) + `/code-review` (defects; `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete). Then `/ship-it` → PR to `dev`. Never merges. Linear → In Review. Changelog line in `~/.claude/shared/agent-changelog.md`. **Stops.**
+7. A few days after deploy: `/measure openspec/changes/mmv-123-slug`. PostHog numbers go into `research.md`; production bugs become new edge scenarios. When finished: `openspec archive mmv-123-slug --yes` (spec merges into `openspec/specs/`).
 
-Lost? `bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/<folder>` prints where you are and what is next. That is Keolo's "suggest next action" button.
+Lost? `bash ~/.claude/skills/ticket/scripts/next-step.sh openspec/changes/<folder>` prints where you are and what is next. That is Keolo's "suggest next action" button.
 
+**Small change?** `/opsx:propose` → `/opsx:apply` → `/opsx:archive`.
 **Small fix?** Skip the loop. `/triage-bug`, fix, `/ship-it`.
 **Too big for one session?** `/wayfinder` first (needs the tracker doc, see section 5), then `/to-spec`, then `/ticket` per slice.
 
@@ -62,7 +65,7 @@ Inside Herdr (prefix is `ctrl+b`, like tmux):
 - Another repo? `cd` there, `prefix+shift+n` again. All spaces show in the sidebar with the agent state (working / blocked / done).
 - Parallel task in one repo: `herdr worktree create --branch larry/mmv-123` → opens as its own workspace.
 
-**The HUD** (`hud [docs/changes/<folder>]`) shows workspace / branch / worktree, the 7-stage
+**The HUD** (`hud [openspec/changes/<folder>]`) shows workspace / branch / worktree, the 7-stage
 lifecycle meter, current stage, next action, scenario counts, the gate status, and the tickets
 table — the same shape as Keolo's `av` screen. Keys:
 
@@ -83,9 +86,10 @@ harness-init ~/Workspace/new-thing            # or --tracker linear
 cd ~/Workspace/new-thing && claude            # then type /onboard-repo
 ```
 `harness-init` creates the repo layer (CLAUDE.md template, rules, launch.json, .mcp.json,
-.worktreeinclude, docs/changes, docs/agents, docs/decisions, .gitignore lines). It never overwrites.
+.worktreeinclude, docs/agents, docs/decisions, .gitignore lines) and runs `openspec init --tools none`
+if `openspec` is on PATH and there is no `openspec/` yet. It never overwrites.
 If you forget, a `SessionStart` hook makes Claude offer it once when a repo has no `CLAUDE.md`
-or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
+or no `openspec/` (or old `docs/changes/`). Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
 
 ## 3. What each new piece does
 
@@ -93,8 +97,11 @@ or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
 |---|---|
 | `/ticket` | The loop. One step per turn. You say "go". |
 | `templates/*.md` | OKF frontmatter (`type`, `status`, `sources`) + OpenSpec body (`### Requirement:` / `#### Scenario:` GIVEN/WHEN/THEN). Same shapes Keolo showed. |
-| `scripts/new-change.sh` | Makes the folder from templates. |
-| `scripts/ready-check.sh` | Definition of Ready: 13 PASS/FAIL lines. Refuses a requirement without an edge scenario. |
+| `scripts/new-change.sh` | Runs `openspec new change` and fills `openspec/changes/<id>-<slug>/` from the templates. Needs `openspec init --tools none` once per repo. |
+| `scripts/ready-check.sh` | Definition of Ready: PASS/FAIL lines + `openspec validate`. Refuses a requirement without an edge scenario, and `tasks.md` without slices. |
+| OpenSpec skills + `/opsx:*` | `openspec-propose/explore/apply-change/update-change/sync-specs/archive-change` and `/opsx:propose\|explore\|apply\|update\|sync\|archive`. Global; `install.sh` links `commands/` sub-folders too. |
+| Anthony's skills | `/to-spec`, `/to-tickets` (tracer-bullet slices), `/implement-spec` (parallel worktrees), `/thermonuclear-review`, `/ponytail` + `/ponytail-review` (over-engineering), `/two-axis-review` (his code review, renamed so built-in `/code-review` still works), `/asd-ste100`, `/duel` (Claude vs Codex, needs `codex login`). fleet and reconcile not installed on purpose. |
+| Global CLAUDE.md | new sections: ASD-STE100 output style, review before PR (both axes), agent changelog, session journal (`~/.claude/shared/journal/`). |
 | `scripts/next-step.sh` | Reads `stage:` in `index.md`, prints the next step. |
 | `scripts/okf-subgraph.sh` | Prints one doc + the docs it links to (depth N). Read a sub-graph, not all of `docs/`. Saves tokens. |
 | `/qa` + `@qa` | Runs scenario tests, live browser pass, writes `qa-report.md`. Report-only unless you say `--write-tests`. |
@@ -112,7 +119,7 @@ or no `docs/changes/`. Then in Herdr: `ctrl+b` `shift+n`, `claude` | `hud`.
 | `project-packs/apply.sh` | copies rules + launch.json only. |
 | `harness-init` (`project-packs/init.sh`) | one command to set up any repo, new or existing. Never overwrites. |
 | `harness-up` (`project-packs/up.sh`) | open N repos in Herdr at once: workspace + split + `claude` \| `hud` each. Uses the Herdr JSON CLI. |
-| `hooks/session-start.sh` | reminds Claude to offer `harness-init` when a repo has no CLAUDE.md / docs/changes. Silent otherwise. |
+| `hooks/session-start.sh` | reminds Claude to offer `harness-init` when a repo has no CLAUDE.md / openspec (or docs/changes). Silent otherwise. |
 
 ## 4. What I changed on your Mac (all reversible)
 
@@ -131,12 +138,12 @@ Nothing was pushed, merged, deployed, or written to the team repo's tracked file
 ## 5. Not done — your call (in order of value)
 
 1. **Commit this repo** so the harness is saved: `cd ~/GITHUB/claude-harness && git add -A && git commit -m "harness: ticket loop, qa/verifier/scout, hooks on"`.
-2. **PR the MMV tracked pack** (`project-packs/manifest-movies-next/`): `.mcp.json`, `.worktreeinclude`, `docs/agents/issue-tracker.md`, `docs/changes/README.md`. Read them first; they touch the team repo.
+2. **PR the MMV tracked pack** (`project-packs/manifest-movies-next/`): `.mcp.json`, `.worktreeinclude`, `docs/agents/issue-tracker.md`, `docs/changes/README.md` (now a short pointer to `openspec/changes/`). MMV also needs `openspec init --tools none` once, in the same PR. Read them first; they touch the team repo.
 3. **`/setup-matt-pocock-skills`** inside MMV, pick Linear. That makes `/wayfinder`, `/to-spec`, `/to-tickets`, `/triage` work (Anthony's map). It writes into the repo → PR.
 4. ~~Herdr~~ — installed 2026-09-10, see section 2b. If the tmux-style prefix keys annoy you after a week, stay on the desktop app + `claude --remote-control`.
 5. **PostHog plugin** for `/measure`: `claude plugin install posthog` (gives `/posthog:experiments`, `/posthog:surveys`). The PostHog MCP you already have works too.
 6. **Ask Keolo** for the `av` repo invite; his loop is what `/ticket` copies, so contributing there will be easy. It is Go; you have `go` installed.
-7. **Optional:** `brew install terminal-notifier` for nicer banners with the Claude icon; `openspec` CLI (`npm i -g @fission-ai/openspec`) if the team wants its `/opsx:*` commands. Not needed for the loop.
+7. **Optional:** `brew install terminal-notifier` for nicer banners with the Claude icon; `openspec` CLI (`npm i -g @fission-ai/openspec`) is now **needed** for the loop (`new-change.sh`, `ready-check.sh`, archive).
 8. **Vault** `larry/larry-starter-memory.md` still says "Next task = MMV-278". Update it in a PR when you next pull the vault.
 
 ## 6. What I checked

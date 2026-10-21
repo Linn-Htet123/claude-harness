@@ -13,7 +13,7 @@ ROOT="$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -f "$ROOT/.no-harness" ] && exit 0                              # opt-out marker for any repo
 MISSING=""
 [ -f "$ROOT/CLAUDE.md" ]              || MISSING="$MISSING CLAUDE.md"
-[ -d "$ROOT/docs/changes" ]           || MISSING="$MISSING docs/changes/"
+[ -d "$ROOT/openspec" ] || [ -d "$ROOT/docs/changes" ] || MISSING="$MISSING openspec/"
 [ -z "$MISSING" ] && exit 0
 echo "Harness note: this repo ($(basename "$ROOT")) is missing:$MISSING. Offer Larry once, in one line: run \`~/GITHUB/claude-harness/project-packs/init.sh $ROOT\` then \`/onboard-repo\`. If he says no, do not mention it again this session."
 exit 0

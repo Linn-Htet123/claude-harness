@@ -63,6 +63,8 @@ cd ~/Workspace/new-thing && claude
 Inside Claude type `/onboard-repo`. It reads the code and fills `CLAUDE.md`.
 Then open `.claude/rules/` and delete the rule files you do not need (no backend? delete `backend.md`).
 
+`harness-init` also runs `openspec init --tools none` once (if `openspec` is installed), so the repo gets an `openspec/` folder for the loop.
+
 If you forget, Claude will say "this repo is missing CLAUDE.md, want me to run harness-init?" Say yes or no.
 
 For MMV nothing is needed; it is already set up.
@@ -71,7 +73,10 @@ For MMV nothing is needed; it is already set up.
 
 ## 3. Doing a ticket (the loop)
 
-This is the main thing. One ticket = one folder `docs/changes/<ID>-<slug>/` with 7 files.
+This is the main thing. One ticket = one **OpenSpec change**: a folder `openspec/changes/<id>-<slug>/` (lower case, e.g. `mmv-278-evening-ritual`).
+Inside: `index.md` (stage), `proposal.md` (why, out of scope, user stories, hypotheses, decision log), `research.md`,
+`specs/<capability>/spec.md` (happy + edge scenarios), `design.md`, `tasks.md` (slices with checkboxes), `qa-report.md`.
+Old tickets in `docs/changes/` still work.
 Claude does **one step per turn** and stops. You say **`go`** for the next step.
 
 ```
@@ -90,17 +95,19 @@ In the Claude pane type:
 | Step | Claude does | You do |
 |---|---|---|
 | **1 Intent** | reads the ticket in Linear, makes the folder, writes "Why" | read the 5-line summary, say `go` |
-| **2 Spec & Design** | asks you numbered questions (each with its recommended answer), sends a scout to research, writes proposal / spec / design / tickets. Every requirement gets a **happy** scenario and an **edge** scenario | answer the questions. "yes to all" is fine if the recommendations are right. Then `go` |
-| **3 Ready** | runs the gate check (13 checks). Shows you the spec | read the scenarios. Add edge cases you know about. Say `go` = you approve. Only then it creates Linear sub-issues |
-| **4 Implement** | makes a branch, writes a failing test per scenario, then the code, then runs the full test suite. Pastes real output | read the test output. `go` for the next ticket row |
+| **2 Spec & Design** | asks you numbered questions (each with its recommended answer), sends a scout to research, writes proposal / spec / design / tasks. Every requirement gets a **happy** scenario and an **edge** scenario | answer the questions. "yes to all" is fine if the recommendations are right. Then `go` |
+| **3 Ready** | runs the gate check (`ready-check.sh`, which also runs `openspec validate`). Shows you the spec and the slices | read the scenarios. Add edge cases you know about. Say `go` = you approve. Only then it creates Linear sub-issues |
+| **4 Implement** | makes a branch, writes a failing test per scenario, then the code, then runs the full test suite. Small work: `/tdd-loop`. Big work (3+ slices): `/implement-spec` builds slices in parallel worktrees. Ticks `tasks.md` boxes. Pastes real output | read the test output. `go` for the next slice |
 | **5 QA** | the `@qa` agent runs the scenario tests + a live browser pass, writes `qa-report.md` | read the pass/fail table. Any **edge** scenario with no test is a real gap |
-| **6 Done** | `@verifier` + `@reviewer` check it, then opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review | read the PR. Ask Anthony to review |
-| **7 Measure** | days later: `/measure docs/changes/MMV-123-slug` checks PostHog numbers, writes learnings, adds production bugs as new edge scenarios | read the learnings |
+| **6 Done** | review gate: `@verifier` + `/code-review` (or `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete). Then `/ship-it` opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review, adds a line to `~/.claude/shared/agent-changelog.md` | read the PR. Ask Anthony to review |
+| **7 Measure** | days later: `/measure openspec/changes/mmv-123-slug` checks PostHog numbers, writes learnings, adds production bugs as new edge scenarios. When you say it is finished: `openspec archive mmv-123-slug --yes` merges the spec into `openspec/specs/` | read the learnings |
 
 **Lost?** Look at the HUD. Or type in a terminal:
 ```bash
-bash ~/.claude/skills/ticket/scripts/next-step.sh docs/changes/MMV-123-slug
+bash ~/.claude/skills/ticket/scripts/next-step.sh openspec/changes/mmv-123-slug
 ```
+
+**Small change, no grilling needed?** `/opsx:propose` → `/opsx:apply` → `/opsx:archive` is the short path.
 
 **Small bug fix?** Skip the loop: `/triage-bug` → fix → `/ship-it`.
 
@@ -147,6 +154,16 @@ From a normal terminal: `hud --skills review` lists matching skills and exits.
 | `/hotfix` | production is broken right now |
 | `/postmortem` | after an incident, write what we learned |
 | `/grill-me` | you have a fuzzy idea, want hard questions |
+| `/to-spec` / `/to-tickets` | turn a talk into a spec / into tracer-bullet slices |
+| `/implement-spec` | build a big spec: one agent per slice, each in its own worktree |
+| `/code-review` | defect review of the diff (built-in) |
+| `/thermonuclear-review` | deep review for risky work (auth, money, data, migrations) |
+| `/ponytail-review` | what can we delete? (over-engineering only, never edits) |
+| `/ponytail` | "be lazy": the simplest fix that works |
+| `/two-axis-review` | Anthony's review: repo standards + spec, side by side |
+| `/asd-ste100` | rewrite hard English into simple, one-meaning English |
+| `/duel <task>` | Claude vs Codex design duel (needs `codex login` once) |
+| `/opsx:propose` `explore` `apply` `update` `sync` `archive` | OpenSpec short path for small work |
 | `/wayfinder` | idea too big for one session |
 | `/onboard-repo` | new repo, write CLAUDE.md |
 | `/standup` | daily update from git + PRs |
@@ -227,7 +244,7 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
 | Problem | Do |
 |---|---|
 | No ding, no banner | type `/hooks` in Claude to see if hooks are registered. Banner needs System Settings → Notifications → Script Editor → Allow |
-| HUD says "no change folder" | you are not in a repo with `docs/changes/`, or no ticket started yet. Press `n` |
+| HUD says "changes: none yet" | `openspec/changes/` is empty, or the repo has no `openspec/` (run `openspec init --tools none` once). Press `n` |
 | HUD box looks broken | your terminal font has no box characters; it still works |
 | "Blocked: ..." on something safe | tell me the exact command; the rule may need a fix in `hooks/guardrails.sh` |
 | After reboot Herdr panes are empty | run `herdr integration install claude` once (done already), and `resume_agents_on_restore = true` is set |
@@ -243,7 +260,8 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
 ```
 ~/GITHUB/claude-harness/          the harness (git, private on GitHub: Linn-Htet123/claude-harness)
   skills/  agents/  hooks/        symlinked into ~/.claude by ./install.sh
-  skills/ticket/templates/        the 7 files of a change folder
+  skills/ticket/templates/        the files of a change folder
+  skills/openspec-*/ commands/opsx/  OpenSpec skills + /opsx:* commands (global)
   skills/ticket/scripts/          new-change, ready-check, next-step, okf-subgraph, hud
   project-packs/init.sh           = harness-init
   docs/USER-MANUAL.md             this file
@@ -251,10 +269,13 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
   docs/research/                  the 4 research reports (pi.dev, Herdr, spec tools, Claude Code)
 ~/.claude/settings.json           hooks + statusline (backups in ~/.claude/backups/)
 ~/.claude/CLAUDE.md               who you are + the loop, loads in every session
+~/.claude/shared/agent-changelog.md  one line per shipped change
+~/.claude/shared/journal/         session journal
 ~/.config/herdr/config.toml       Herdr settings
 <repo>/CLAUDE.md                  facts about that repo (commands, branch, rules)
 <repo>/.claude/rules/             rules that load only for matching files
-<repo>/docs/changes/<ID>-<slug>/  one folder per ticket
+<repo>/openspec/changes/<id>-<slug>/  one folder per ticket (old ones: docs/changes/)
+<repo>/openspec/specs/            living spec library (archive merges each change here)
 <repo>/docs/decisions/            ADRs (big decisions)
 ```
 
@@ -273,6 +294,8 @@ It installs jq/gh/herdr, links skills + agents + hooks, puts `hud` / `harness-in
 | Word | Meaning |
 |---|---|
 | **Spec** | the written plan: what we build, what we do not, how we prove it works |
+| **OpenSpec change** | one ticket's folder in `openspec/changes/`. After ship, `openspec archive` merges its spec into `openspec/specs/` |
+| **Slice** | one thin piece in `tasks.md` that goes through every layer and can be shown alone. `blocked by` says which slice must come first |
 | **Scenario** | one GIVEN / WHEN / THEN case. **Happy** = normal path. **Edge** = bad input, offline, double click, expired session |
 | **Definition of Ready** | the spec is good enough to start coding (the gate check) |
 | **Worktree** | a second copy of the repo on another branch, so two agents do not step on each other |

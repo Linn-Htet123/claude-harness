@@ -9,7 +9,8 @@
 #   2. CLAUDE.md from the template (you then run /onboard-repo to fill it)
 #   3. .claude/rules/*.md + .claude/launch.json   (local rules, from _template)
 #   4. .mcp.json (Playwright), .worktreeinclude
-#   5. docs/changes/README.md, docs/agents/issue-tracker.md, docs/decisions/
+#   5. openspec/ (runs `openspec init --tools none` once, if openspec is on PATH),
+#      docs/agents/issue-tracker.md, docs/decisions/
 #   6. .gitignore lines for .claude/settings.local.json and .claude/worktrees/
 #   7. prints the next steps (onboard-repo, herdr workspace)
 set -euo pipefail
@@ -48,8 +49,11 @@ add "$T/.claude/launch.json" "$REPO/.claude/launch.json"
 add "$T/.mcp.json" "$REPO/.mcp.json"
 add "$T/.worktreeinclude" "$REPO/.worktreeinclude"
 
-# 5. docs
-add "$T/docs/changes/README.md" "$REPO/docs/changes/README.md"
+# 5. openspec (each /ticket = one change in openspec/changes/) + docs
+if [ -d "$REPO/openspec" ]; then echo "  keep   openspec/"
+elif command -v openspec >/dev/null 2>&1; then
+  (cd "$REPO" && openspec init --tools none >/dev/null) && echo "  added  openspec/ (openspec init --tools none)"
+else echo "  skip   openspec/ (openspec not on PATH: npm i -g @fission-ai/openspec, then: cd $REPO && openspec init --tools none)"; fi
 add "$T/docs/agents/issue-tracker.md" "$REPO/docs/agents/issue-tracker.md"
 mkdir -p "$REPO/docs/decisions"; [ -e "$REPO/docs/decisions/README.md" ] || {
   printf '# Decisions (ADRs)\n\nOne file per decision: `NNNN-short-title.md` with Context / Options / Decision / Consequences.\nWrite one when a choice is hard to undo. Use /domain-modeling.\n' > "$REPO/docs/decisions/README.md"; echo "  added  docs/decisions/README.md"; }

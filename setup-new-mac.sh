@@ -19,6 +19,9 @@ for pkg in jq gh herdr; do
   if command -v "$pkg" >/dev/null; then skip "$pkg already installed"; else brew install "$pkg" >/dev/null 2>&1 && ok "installed $pkg" || warn "could not install $pkg"; fi
 done
 command -v claude >/dev/null || warn "claude CLI not found. Install Claude Code first: https://code.claude.com"
+# OpenSpec (the /ticket spec files) and Codex (the other side of /duel)
+if command -v openspec >/dev/null; then skip "openspec already installed"; else npm i -g @fission-ai/openspec >/dev/null 2>&1 && ok "installed openspec" || warn "could not install openspec (needs node: brew install node)"; fi
+if command -v codex >/dev/null; then skip "codex already installed"; else brew install --cask codex >/dev/null 2>&1 && ok "installed codex (run: codex login)" || warn "could not install codex"; fi
 
 echo "==> 2. skills / agents / commands -> ~/.claude (symlinks)"
 "$H/install.sh" >/dev/null && ok "install.sh done"

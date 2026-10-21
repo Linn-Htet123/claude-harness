@@ -33,19 +33,26 @@ Also install the two plugin packs inside Claude Code:
 
 | Stage | Command |
 |---|---|
-| **Whole ticket, start to finish** | `/ticket MMV-123` (Intent → Spec → Ready → Implement → QA → Done → Measure) |
+| **Whole ticket, start to finish** | `/ticket MMV-123` (Intent → Spec → Ready → Implement → QA → Done → Measure). One OpenSpec change in `openspec/changes/<id>-<slug>/` |
+| Small change, short path | `/opsx:propose` → `/opsx:apply` → `/opsx:archive` (also `/opsx:explore`, `/opsx:update`, `/opsx:sync`) |
 | Dashboard next to Claude (Herdr pane) | `hud` |
 | Open 3 projects in Herdr at once | `harness-up <repo> <repo> <repo>` |
 | Unclear request | `/grill-me` |
-| Requirements | `/spec-first` |
+| Requirements | `/spec-first` or `/to-spec` |
+| Split into slices | `/to-tickets` |
 | Plan | `@planner` |
 | New repo | `harness-init <path>` then `/onboard-repo` |
-| Build | `/tdd-loop` |
+| Build | `/tdd-loop` (small) or `/implement-spec` (big, parallel worktrees) |
+| Simplest thing that works | `/ponytail` |
 | Test | `@tester` |
 | QA against the spec | `/qa` or `@qa` |
 | Spec coverage check | `@verifier` |
 | Research (read-only) | `@scout` |
-| Review | `@reviewer` |
+| Review (defects) | `/code-review`, `@reviewer`; risky work: `/thermonuclear-review` |
+| Review (over-engineering) | `/ponytail-review` |
+| Review (standards + spec) | `/two-axis-review` |
+| Second opinion from Codex | `/duel <task>` (needs `codex login`) |
+| Plain English output | `/asd-ste100` |
 | Security | `@security-reviewer` |
 | Ship | `/ship-it` |
 | Bug | `/triage-bug` |
@@ -59,8 +66,9 @@ Also install the two plugin packs inside Claude Code:
 ## Layout
 
 - `agents/` — specialists that run in fresh context
-- `skills/` — SDLC playbooks
-- `commands/` — small shortcuts
+- `skills/` — SDLC playbooks, incl. `openspec-*` (OpenSpec) and Anthony's `ponytail`, `ponytail-review`, `thermonuclear-review`, `to-spec`, `to-tickets`, `implement-spec`, `two-axis-review`, `asd-ste100`, `duel`
+- `openspec/` — this repo's own OpenSpec folder (`openspec init --tools none`); any repo using `/ticket` needs one
+- `commands/` — small shortcuts; `commands/opsx/` = the `/opsx:*` OpenSpec commands (install.sh links sub-folders)
 - `memory/lessons.md` — what broke before; read before debugging
 - `hooks/` — guardrails + notify + statusline, **ON** (wired in `~/.claude/settings.json`)
 - `templates/` — `CLAUDE.md` starter for any repo

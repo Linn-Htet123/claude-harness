@@ -6,11 +6,14 @@ status: draft
 # Design — {{ID}} {{TITLE}}
 
 ## Context
-{{What exists today. Link the files that matter.}}
+{{What exists today. Link the files that matter. See proposal.md for the why.}}
 
-## Goals / Non-goals
-- Goal: {{...}}
-- Non-goal: {{...}}
+## Goals / Non-Goals
+**Goals:**
+- {{...}}
+
+**Non-Goals:**
+- {{...}}
 
 ## Architecture
 ```mermaid
@@ -28,7 +31,7 @@ flowchart LR
 
 Big decisions also get an ADR in `docs/decisions/` (use /domain-modeling).
 
-## Risks / trade-offs
+## Risks / Trade-offs
 - {{...}}
 
 ## Rollout / rollback

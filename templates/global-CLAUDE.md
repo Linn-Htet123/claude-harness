@@ -26,8 +26,8 @@
 
 ## How we work (the loop, same in every project)
 - Any ticket bigger than a one-line fix: `/ticket <ID>`. Intent → Spec (grilling, happy + edge scenarios) → Ready → Implement (TDD) → QA (@qa) → Done (PR, never main) → Measure (/measure). One step per turn; I say "go".
-- Per-ticket docs live in `docs/changes/<ID>-<slug>/` (proposal, research, spec, design, tickets). Read that folder, not all of `docs/`.
-- Fresh eyes before a PR: @verifier (spec coverage) + @reviewer (correctness). @scout for research. Never merge.
+- Each ticket is one OpenSpec change in `openspec/changes/<id>-<slug>/` (proposal, research, specs/<capability>/spec.md, design, tasks). Read that folder, not the whole repo. `openspec/specs/` = what the system already promises. Old tickets may still be in `docs/changes/`.
+- Fresh eyes before a PR: @verifier (spec coverage) + the review gate below. @scout for research. Never merge.
 - Guardrail hooks block: push to main, force push, PR merge, schema push, `rm -rf ~`, reading `.env`. If a hook blocks you, say so in one line and stop.
 - Setup guide + research: ~/GITHUB/claude-harness/docs/agentic-workflow-setup.md
 - Any "how do I / what is / which key" question about Herdr, hud, the harness, the loop, hooks, skills or agents (even with typos like "herbr"): use the `harness-help` skill. It has the cheat sheet and reads the manual. Never guess about these.
@@ -35,7 +35,7 @@
 ## Output style: ASD-STE100
 (From Anthony's setup, 2026-10-21.)
 
-Write your chat responses in Simplified Technical English. Load the `anthropic-skills:asd-ste100` skill at the start of the session.
+Write your chat responses in Simplified Technical English. Load the `asd-ste100` skill at the start of the session.
 
 The rules, in short:
 
