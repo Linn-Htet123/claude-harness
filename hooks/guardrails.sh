@@ -9,6 +9,7 @@
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
 #   4. rm -rf on root / home
 #   5. reading a real .env file into context (cat/less/head/tail/... or the Read tool)
+#   6. gh pr create before /review-gate marked the current commit as reviewed
 #
 # Test it: hooks/test-guardrails.sh
 
@@ -18,6 +19,7 @@ INPUT="$(cat)"
 TOOL="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')"
 CMD="$(printf '%s' "$INPUT"  | jq -r '.tool_input.command // empty')"
 FILE="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
+CWD="$(printf '%s' "$INPUT"  | jq -r '.cwd // empty')"
 
 deny() {
   jq -n --arg reason "$1" '{
@@ -70,6 +72,23 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
       esac
       deny "Blocked: reading $P puts secrets into context. Use .env.example instead."
     done
+  fi
+
+  # 6. opening a PR on a commit that /review-gate did not pass.
+  #    The mark is <git-common-dir>/review-gate/<HEAD sha>, written by
+  #    skills/review-gate/scripts/mark-reviewed.sh. Not a git repo -> allow.
+  #    Only a real command counts: heredoc bodies are dropped, and gh must
+  #    start a command (line start, or after ; & | ( then do), not sit in a string.
+  RUN="$(printf '%s\n' "$CMD" | awk '
+    d != "" { t=$0; gsub(/^[ \t]+|[ \t]+$/, "", t); if (t == d) d=""; next }
+    { print; if (match($0, /<<-?[ \t]*["\047]?[A-Za-z_][A-Za-z0-9_]*/)) { d=substr($0, RSTART, RLENGTH); sub(/^<<-?[ \t]*["\047]?/, "", d) } }')"
+  if printf '%s\n' "$RUN" | grep -Eq '(^|[;&|(]|then|do)[[:space:]]*gh[[:space:]]+pr[[:space:]]+create'; then
+    D="${CWD:-$PWD}"
+    GD="$(git -C "$D" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    SHA="$(git -C "$D" rev-parse HEAD 2>/dev/null || true)"
+    if [ -n "$GD" ] && [ -n "$SHA" ] && [ ! -f "$GD/review-gate/$SHA" ]; then
+      deny "Blocked: commit ${SHA:0:7} has no review. Run /review-gate first; open the PR after it passes."
+    fi
   fi
 fi
 

@@ -12,7 +12,7 @@ case "$STAGE" in
   spec)      echo "NEXT: Step 3 Ready — run scripts/ready-check.sh $DIR and fix FAIL lines; Larry approves; set stage: ready" ;;
   ready)     echo "NEXT: Step 4 Implement — branch/worktree; /tdd-loop per scenario (small) or /implement-spec (big); tick tasks.md boxes; set stage: implement" ;;
   implement) echo "NEXT: Step 5 QA — dispatch @qa with $DIR; it writes qa-report.md; set stage: qa" ;;
-  qa)        echo "NEXT: Step 6 Done — @verifier + /code-review (or /thermonuclear-review) + /ponytail-review, then /ship-it (PR to dev, never main); set stage: done" ;;
+  qa)        echo "NEXT: Step 6 Done — commit, /review-gate (must PASS), then /ship-it (PR to dev, never main); set stage: done" ;;
   done)      echo "NEXT: Step 7 Measure — after deploy + N days, run /measure $DIR, then openspec archive $NAME; set stage: measure" ;;
   measure)   echo "NEXT: Close — learnings written, new edge scenarios added, change archived (openspec archive $NAME), changelog entry; set stage: closed" ;;
   closed)    echo "NEXT: nothing. This change is closed." ;;

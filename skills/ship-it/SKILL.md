@@ -63,10 +63,15 @@ Bad: `fixed stuff`, `updates`, `wip`
 
 Split unrelated changes into separate commits.
 
-## Step 5 - push and open the PR
+## Step 5 - review gate, push and open the PR
+
+Run `/review-gate` on the committed branch first. It must PASS: the
+guardrails hook blocks opening the PR until the current commit is reviewed.
+A commit after the review needs a new `/review-gate`.
 
 ```bash
 git push -u origin <branch>
+gh pr create ...
 ```
 
 PR body:
@@ -107,5 +112,6 @@ merges it.
 
 ## Then
 
-Ask `@reviewer` and, if it touches auth / payments / user data,
-`@security-reviewer` to look before you ping a person. Fresh eyes are cheap.
+`/review-gate` already ran `@verifier`, the defect review, ponytail and (when
+needed) `@security-reviewer`. Put its verdict line in the PR body under
+**Verification**, then ping a person.

@@ -37,5 +37,22 @@ t "Read .env.local"                  deny  "$(r '/x/.env.local')"
 t "Read .env.example"                allow "$(r '/x/.env.example')"
 t "pnpm test"                        allow "$(b 'pnpm test')"
 t "git push (no target)"             allow "$(b 'git push')"
+
+# 6. gh pr create needs the /review-gate mark for HEAD (temp repo as cwd)
+REPO="$(mktemp -d)"; trap 'rm -rf "$REPO"' EXIT
+git -C "$REPO" init -q && git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m one
+c() { printf '{"tool_name":"Bash","cwd":"%s","tool_input":{"command":"%s"}}' "$1" "$2"; }
+t "gh pr create, no review"          deny  "$(c "$REPO" 'gh pr create --fill')"
+t "gh pr view, no review (allowed)"  allow "$(c "$REPO" 'gh pr view')"
+(cd "$REPO" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
+t "gh pr create, reviewed"           allow "$(c "$REPO" 'gh pr create --fill')"
+git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m two
+t "gh pr create, new commit"         deny  "$(c "$REPO" 'gh pr create --fill')"
+t "gh pr create, not a git repo"     allow "$(c /tmp 'gh pr create --fill')"
+t "cd x && gh pr create"             deny  "$(c "$REPO" 'cd . && gh pr create --fill')"
+t "push; gh pr create"               deny  "$(c "$REPO" 'git push -u origin x; gh pr create --fill')"
+t "heredoc mentions it (allowed)"    allow "$(c "$REPO" "python3 - <<'PY'\\ngh pr create in text\\nPY")"
+t "commit msg mentions it (allowed)" allow "$(c "$REPO" 'git commit -m \"run gh pr create later\"')"
+t "grep for it (allowed)"            allow "$(c "$REPO" 'grep -n \"gh pr create\" README.md')"
 echo; echo "passed=$PASS failed=$FAIL"
 [ "$FAIL" = 0 ]

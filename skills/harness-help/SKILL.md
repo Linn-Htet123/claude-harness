@@ -83,7 +83,7 @@ Repo has no `openspec/`? Run once: `openspec init --tools none` (skills and `/op
 | 3 Ready | `ready-check.sh` (+ `openspec validate`) | approve = `go` |
 | 4 Implement | branch, test-first per scenario (`S1 happy:`, `S2 edge:` in test titles). Small: `/tdd-loop`. Big: `/implement-spec` (parallel worktrees) | `go` per slice |
 | 5 QA | @qa runs scenarios + browser pass, `qa-report.md` | read gaps |
-| 6 Done | review gate: @verifier + `/code-review` (risky: `/thermonuclear-review`) + `/ponytail-review`, then `/ship-it` PR to base branch, changelog line in `~/.claude/shared/agent-changelog.md`. Never merges | ask a human to review |
+| 6 Done | commit, then `/review-gate` (runs @verifier + `/code-review` or `/thermonuclear-review` + `/ponytail-review` + @security-reviewer when needed; must PASS, the hook blocks opening a PR until the current commit has its mark), then `/ship-it` PR to base branch, changelog line in `~/.claude/shared/agent-changelog.md`. Never merges | ask a human to review |
 | 7 Measure | `/measure <folder>` PostHog numbers → learnings, new edge scenarios; then `openspec archive <name> --yes` merges the spec into `openspec/specs/` | read, say "finished" |
 
 Scripts (in `~/.claude/skills/ticket/scripts/`): `new-change.sh`, `ready-check.sh`, `next-step.sh`, `okf-subgraph.sh`, `hud.sh`.
@@ -112,7 +112,7 @@ Sounds: Hero = turn finished; Glass + banner = Claude needs you; Herdr ding = ag
 
 ## Troubleshooting (short)
 
-No ding → `/hooks`; banner needs System Settings → Notifications → Script Editor → Allow. HUD stale → it auto-refreshes; old version → `q` then `hud`. "Blocked:" on something safe → tell Claude the exact command, fix lives in `hooks/guardrails.sh`. Playwright not running → `/mcp`, dev server must be up. Rules ignored after long session → `/compact`. Changed a skill → restart the session.
+No ding → `/hooks`; banner needs System Settings → Notifications → Script Editor → Allow. HUD stale → it auto-refreshes; old version → `q` then `hud`. "Blocked: commit … has no review" → run `/review-gate`; a new commit needs a new run. "Blocked:" on something safe → tell Claude the exact command, fix lives in `hooks/guardrails.sh`. Playwright not running → `/mcp`, dev server must be up. Rules ignored after long session → `/compact`. Changed a skill → restart the session.
 
 ## How to answer
 

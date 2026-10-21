@@ -237,7 +237,7 @@ loops_menu() {
   printf '  %s3%s PR babysitter    every 10 min: fix red CI, answer reviews\n' "$YEL" "$R"
   printf '  %s4%s QA sweep         run @qa on every change in implement/qa stage\n' "$YEL" "$R"
   printf '  %s5%s Measure sweep    /measure on every change in done stage\n' "$YEL" "$R"
-  printf '  %s6%s Verify branch    @verifier + @reviewer + ponytail on the diff, report only\n' "$YEL" "$R"
+  printf '  %s6%s Review gate      /review-gate on this branch (all axes, marks HEAD)\n' "$YEL" "$R"
   printf '  %s7%s Wayfinder        map a big fuzzy idea into decision tickets\n' "$YEL" "$R"
   printf '  %s8%s Onboard repo     read the code, write CLAUDE.md\n' "$YEL" "$R"
   printf '> '; read -r n
@@ -247,7 +247,7 @@ loops_menu() {
     3) run_claude "/loop 10m Check the open PR for this branch with gh. If CI is red, fix it and push. If there are review comments, answer or apply them. Otherwise say: quiet." ;;
     4) run_claude "For every change folder in openspec/changes/ (and old docs/changes/) whose index.md has stage implement or qa, dispatch the qa agent with that folder and collect the pass/fail tables into one summary. Report only." ;;
     5) run_claude "For every change folder in openspec/changes/ (and old docs/changes/) whose index.md has stage done, run /measure on it. Numbers in a table. Say not enough data instead of guessing." ;;
-    6) run_claude "Dispatch @verifier and @reviewer on the current branch diff${DIR:+ against $rel}, then run /ponytail-review. Report their findings, ranked. Do not edit anything." ;;
+    6) run_claude "/review-gate" ;;
     7) printf 'Destination in one line: '; read -r idea; [ -n "$idea" ] && run_claude "/wayfinder $idea" ;;
     8) run_claude "/onboard-repo" ;;
   esac

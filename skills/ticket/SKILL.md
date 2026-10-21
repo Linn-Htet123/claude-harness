@@ -91,12 +91,11 @@ Dispatch `@qa` with the change folder. It runs the scenario tests, does a live b
 ## Step 6 — Done (the review gate)
 
 Two axes, because a defect review never asks "should this exist":
-1. Dispatch `@verifier` (fresh eyes: every S-id has a test, diff matches the spec, no ticket refs in code, no secrets).
-2. **Defects:** call `code-review` on the branch diff. For a big or risky change (auth, money, data, migrations), call `thermonuclear-review` instead.
-3. **Over-engineering:** call `ponytail-review` on the same diff. It lists cuts and ends with `net: -N lines possible`; it never edits.
-4. Fix the real defects and re-run tests. Judge each ponytail cut: apply it, or say why the cost is deliberate.
-5. Call the Skill tool with `ship-it` → PR to the base branch (MMV = `dev`; never `main`). PR body links the change folder, lists S-ids covered, and has a **Verify** section with the test command and its real output.
-6. Move the ticket to **In Review** (or this tracker's equivalent) with the PR link as a comment. Add the changelog entry (`~/.claude/shared/agent-changelog.md`). Set `stage: done`. Stop. **Never merge.**
+1. Commit the work, then call the Skill tool with `review-gate`. In one go it runs `@verifier` (every S-id has a test, diff matches the spec), defects (`code-review`, or `thermonuclear-review` for risky work), `ponytail-review` (over-engineering), and `@security-reviewer` when needed, then gives one ranked report.
+2. BLOCKED: fix the blockers, re-run tests, commit, run `review-gate` again. Judge each ponytail cut: apply it, or say why the cost is deliberate.
+3. PASS: it marks the commit as reviewed. The guardrails hook blocks opening a PR without that mark.
+4. Call the Skill tool with `ship-it` → PR to the base branch (MMV = `dev`; never `main`). PR body links the change folder, lists S-ids covered, and has a **Verify** section with the test command and its real output.
+5. Move the ticket to **In Review** (or this tracker's equivalent) with the PR link as a comment. Add the changelog entry (`~/.claude/shared/agent-changelog.md`). Set `stage: done`. Stop. **Never merge.**
 
 ## Step 7 — Measure + archive (after merge + deploy + a few days)
 

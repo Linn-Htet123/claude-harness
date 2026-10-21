@@ -52,7 +52,7 @@ Scope: this applies to chat responses, commit messages, and PR bodies. It does n
 
 ## Review before opening a PR (all projects)
 
-Run BOTH before you open a PR. They hunt different things, and neither finds the other's misses.
+Run BOTH before you open a PR. They hunt different things, and neither finds the other's misses. `/review-gate` runs both (plus @verifier and @security-reviewer) in one go, and the guardrails hook blocks opening a PR until it passes.
 
 1. `/code-review` (or `/thermonuclear-review` for a big or risky change): defects. Is this wrong?
 2. `/ponytail-review`: over-engineering. Reinvented standard library, unneeded dependencies, speculative abstractions, dead flexibility. Ends with `net: -N lines possible`.

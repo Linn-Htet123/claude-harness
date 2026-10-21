@@ -48,6 +48,7 @@ Also install the two plugin packs inside Claude Code:
 | QA against the spec | `/qa` or `@qa` |
 | Spec coverage check | `@verifier` |
 | Research (read-only) | `@scout` |
+| **Review before a PR (all axes)** | `/review-gate` (must PASS; the hook blocks opening a PR without it) |
 | Review (defects) | `/code-review`, `@reviewer`; risky work: `/thermonuclear-review` |
 | Review (over-engineering) | `/ponytail-review` |
 | Review (standards + spec) | `/two-axis-review` |

@@ -99,7 +99,7 @@ In the Claude pane type:
 | **3 Ready** | runs the gate check (`ready-check.sh`, which also runs `openspec validate`). Shows you the spec and the slices | read the scenarios. Add edge cases you know about. Say `go` = you approve. Only then it creates Linear sub-issues |
 | **4 Implement** | makes a branch, writes a failing test per scenario, then the code, then runs the full test suite. Small work: `/tdd-loop`. Big work (3+ slices): `/implement-spec` builds slices in parallel worktrees. Ticks `tasks.md` boxes. Pastes real output | read the test output. `go` for the next slice |
 | **5 QA** | the `@qa` agent runs the scenario tests + a live browser pass, writes `qa-report.md` | read the pass/fail table. Any **edge** scenario with no test is a real gap |
-| **6 Done** | review gate: `@verifier` + `/code-review` (or `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete). Then `/ship-it` opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review, adds a line to `~/.claude/shared/agent-changelog.md` | read the PR. Ask Anthony to review |
+| **6 Done** | commit, then **`/review-gate`**: one command runs `@verifier` + `/code-review` (or `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete) + `@security-reviewer` when needed. It must PASS: the hook blocks opening a PR until the current commit is reviewed. Then `/ship-it` opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review, adds a line to `~/.claude/shared/agent-changelog.md` | read the PR. Ask Anthony to review |
 | **7 Measure** | days later: `/measure openspec/changes/mmv-123-slug` checks PostHog numbers, writes learnings, adds production bugs as new edge scenarios. When you say it is finished: `openspec archive mmv-123-slug --yes` merges the spec into `openspec/specs/` | read the learnings |
 
 **Lost?** Look at the HUD. Or type in a terminal:
@@ -246,6 +246,7 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
 | No ding, no banner | type `/hooks` in Claude to see if hooks are registered. Banner needs System Settings → Notifications → Script Editor → Allow |
 | HUD says "changes: none yet" | `openspec/changes/` is empty, or the repo has no `openspec/` (run `openspec init --tools none` once). Press `n` |
 | HUD box looks broken | your terminal font has no box characters; it still works |
+| "Blocked: commit … has no review" | run `/review-gate`. A commit after the review needs a new run |
 | "Blocked: ..." on something safe | tell me the exact command; the rule may need a fix in `hooks/guardrails.sh` |
 | After reboot Herdr panes are empty | run `herdr integration install claude` once (done already), and `resume_agents_on_restore = true` is set |
 | Playwright / browser pass not running | type `/mcp` in Claude and check `playwright` is Connected. A dev server must be up (`pnpm dev:becca`) |
