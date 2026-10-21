@@ -58,6 +58,10 @@ EOF
 
 echo "==> 5. global CLAUDE.md"
 if [ -s "$HOME/.claude/CLAUDE.md" ]; then skip "~/.claude/CLAUDE.md exists — not touched (compare with templates/global-CLAUDE.md)"; else cp "$H/templates/global-CLAUDE.md" "$HOME/.claude/CLAUDE.md"; ok "~/.claude/CLAUDE.md installed"; fi
+mkdir -p "$HOME/.claude/shared/journal"
+for f in agent-changelog.md journal/TEMPLATE.md; do
+  if [ -e "$HOME/.claude/shared/$f" ]; then skip "shared/$f exists"; else cp "$H/templates/shared/$f" "$HOME/.claude/shared/$f"; ok "shared/$f installed"; fi
+done
 
 echo "==> 5b. Claude memory notes (what past sessions learned)"
 MEMDIR="$HOME/.claude/projects/-Users-tharlinhtet-my/memory"
