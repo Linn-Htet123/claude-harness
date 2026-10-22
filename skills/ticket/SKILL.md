@@ -94,7 +94,7 @@ Two axes, because a defect review never asks "should this exist":
 1. Set `stage: done` in `index.md` and tick the last `tasks.md` boxes, so they are part of the reviewed commit. Commit the work, then call the Skill tool with `review-gate`. In one go it runs `@verifier` (every S-id has a test, diff matches the spec), defects (`code-review`, or `thermonuclear-review` for risky work), `ponytail-review` (over-engineering), and `@security-reviewer` when needed, then gives one ranked report.
 2. BLOCKED: fix the blockers, re-run tests, commit, run `review-gate` again. Judge each ponytail cut: apply it, or say why the cost is deliberate.
 3. PASS: it marks the commit as reviewed. The guardrails hook blocks opening a PR without that mark.
-4. Call the Skill tool with `ship-it` → PR to the base branch (MMV = `dev`; never `main`). PR body links the change folder, lists S-ids covered, and has a **Verify** section with the test command and its real output.
+4. Call the Skill tool with `ship-it` → PR to the base branch (MMV = `dev`; never `main`). PR body links the change folder, lists S-ids covered, and has a **Verification** section with the test command, its real output, and the `/review-gate` verdict line.
 5. Move the ticket to **In Review** (or this tracker's equivalent) with the PR link as a comment. Add the changelog entry (`~/.claude/shared/agent-changelog.md`). Stop. **Never merge.**
 
 ## Step 7 — Measure + archive (after merge + deploy + a few days)

@@ -10,7 +10,7 @@ import * as greptile from '../scripts/greptile.mjs';
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 // The branch duel PRs target and diff against. MMV uses dev: DUEL_BASE=dev.
-const BASE = process.env.DUEL_BASE || 'main';
+export const BASE = process.env.DUEL_BASE || 'main';
 
 // Phases where a live session may hold EDIT access: the duel has a worktree AND
 // it's human-gated/idle, never mid-autonomous-round — so a session can't clobber
@@ -134,7 +134,7 @@ export function createLauncher({
 
   async function resolutionPipeline(slug) {
     const m = meta(slug);
-    const researchDir = researchCwd(m.repo); // contestants study origin/main, not the working branch
+    const researchDir = researchCwd(m.repo); // contestants study origin/<BASE>, not the working branch
     setPhase(slug, 'design', 1, '⚔️ Round 1 — both contestants answering…');
     const [c, x] = await Promise.all([
       callWithRetry('claude', slug, { role: 'design', round: 1, out: 'design-claude.md', mode: 'read', cd: researchDir, briefName: 'brief-design-claude.md', brief: BRIEFS.design(m.task, 'codex').replace('{NAME}', 'claude') }),
@@ -156,7 +156,7 @@ export function createLauncher({
   // cross-exam, but there's no synthesis draft — a human picks the winner instead.
   async function executionDesignPhase(slug) {
     const m = meta(slug);
-    const researchDir = researchCwd(m.repo); // contestants study origin/main, not the working branch
+    const researchDir = researchCwd(m.repo); // contestants study origin/<BASE>, not the working branch
     setPhase(slug, 'design', 1, '⚔️ Round 1 — both contestants answering…');
     const [c, x] = await Promise.all([
       callWithRetry('claude', slug, { role: 'design', round: 1, out: 'design-claude.md', mode: 'read', cd: researchDir, briefName: 'brief-design-claude.md', brief: BRIEFS.design(m.task, 'codex').replace('{NAME}', 'claude') }),
@@ -253,7 +253,7 @@ export function createLauncher({
     catch { return false; }
   }
 
-  // where contestants RESEARCH: a fresh, read-only checkout of origin/main — NOT the user's
+  // where contestants RESEARCH: a fresh, read-only checkout of origin/<BASE> — NOT the user's
   // working branch (which may be a feature branch missing the code the ticket targets, so a
   // grounded contestant still can't find it). One reusable detached worktree per repo, kept
   // current. Non-git repos (local map dir, /tmp) are used as-is.
@@ -263,8 +263,8 @@ export function createLauncher({
     const wt = `${repo}-research`;
     try { execFileSync('git', ['-C', repo, 'fetch', 'origin', BASE, '--quiet'], { stdio: 'ignore' }); } catch {}
     try {
-      if (!existsSync(wt)) execFileSync('git', ['-C', repo, 'worktree', 'add', '--detach', wt, 'origin/main'], { stdio: 'ignore' });
-      else execFileSync('git', ['-C', wt, 'checkout', '--detach', '--force', 'origin/main'], { stdio: 'ignore' });
+      if (!existsSync(wt)) execFileSync('git', ['-C', repo, 'worktree', 'add', '--detach', wt, `origin/${BASE}`], { stdio: 'ignore' });
+      else execFileSync('git', ['-C', wt, 'checkout', '--detach', '--force', `origin/${BASE}`], { stdio: 'ignore' });
     } catch { return repo; } // worktree failed → fall back to the repo as-is
     return wt;
   }
@@ -276,17 +276,17 @@ export function createLauncher({
     const stem = slug.replace(/^\d{4}-\d{2}-\d{2}-/, '');
     let short = stem, worktree = `${repo}-duel-${short}`, n = 2;
     while (existsSync(worktree) || branchExists(repo, `duel/${short}`)) { short = `${stem}-${n++}`; worktree = `${repo}-duel-${short}`; }
-    // Branch off the PR base (origin/main), NOT the repo's current HEAD — otherwise a build
+    // Branch off the PR base (origin/<BASE>), NOT the repo's current HEAD — otherwise a build
     // started while the user is on a feature branch would carry that branch's commits into the
     // duel branch, and the PR diff would be wrong. Fetch first for freshness; fall back to a
-    // local main, then HEAD, if origin/main isn't available (offline / fresh repo / tests).
+    // local <BASE>, then HEAD, if origin/<BASE> isn't available (offline / fresh repo / tests).
     const verify = (ref) => { try { execFileSync('git', ['-C', repo, 'rev-parse', '--verify', '--quiet', ref], { stdio: 'ignore' }); return true; } catch { return false; } };
     try { execFileSync('git', ['-C', repo, 'fetch', 'origin', BASE, '--quiet'], { stdio: 'ignore' }); } catch {}
     const baseRef = verify(`origin/${BASE}`) ? `origin/${BASE}` : verify(BASE) ? BASE : 'HEAD';
-    // PIN the base to the SHA at creation time — NOT the ref name. origin/main moves when
+    // PIN the base to the SHA at creation time — NOT the ref name. origin/<BASE> moves when
     // something merges during a (possibly hour-long) build; diffing against the moved ref shows
     // phantom deletions of files added to main meanwhile and miscounts the slice's LOC. The PR
-    // still targets the `main` branch (gh computes the merge-base); this SHA is only for our own
+    // still targets the <BASE> branch (gh computes the merge-base); this SHA is only for our own
     // diff panel + LOC gate, which must reflect exactly what THIS build changed.
     let baseSha = baseRef;
     try { baseSha = execFileSync('git', ['-C', repo, 'rev-parse', baseRef], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || baseRef; } catch {}

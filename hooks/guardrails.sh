@@ -46,15 +46,24 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
     deny "Blocked: push to main/master. Push to a branch and open a PR."
   fi
   # 1a. a push to the current branch (no refspec, HEAD, @) while that branch is main/master
-  for P in $(printf '%s\n' "$TAGS" | sed -n 's/^PUSHCUR //p'); do
-    has CD && [ "$P" = - ] && deny "Blocked: push after cd: run git push as its own command, from the repo folder."
-    [ "$P" = - ] && P="${CWD:-$PWD}"
-    case "$P" in /*) ;; *) P="${CWD:-$PWD}/$P" ;; esac
+  #     The branch is read before the command runs, so a cd or a branch switch in
+  #     the same command, or a path we cannot read, fails closed.
+  while IFS= read -r P; do
+    [ -n "$P" ] || continue
+    if [ "$P" = - ]; then
+      has CD     && deny "Blocked: push after cd: run git push as its own command, from the repo folder."
+      has SWITCH && deny "Blocked: push after a branch switch: run git push as its own command."
+      P="${CWD:-$PWD}"
+    fi
+    [ "$P" = "?" ] && deny "Blocked: cannot read the git -C path of this push. Run git push from the repo folder."
+    case "$P" in "~"*) P="$HOME${P#\~}" ;; '$HOME'*) P="$HOME${P#\$HOME}" ;; '${HOME}'*) P="$HOME${P#\$\{HOME\}}" ;; esac
+    case "$P" in /*) ;; *) has CD && deny "Blocked: relative git -C path after cd. Use an absolute path."; P="${CWD:-$PWD}/$P" ;; esac
+    git -C "$P" rev-parse --git-dir >/dev/null 2>&1 || deny "Blocked: $P is not a git repo I can read, so I cannot check its branch."
     CUR="$(git -C "$P" branch --show-current 2>/dev/null || true)"
     if [ "$CUR" = main ] || [ "$CUR" = master ]; then
       deny "Blocked: you are on $CUR, so this push goes to $CUR. Make a branch first."
     fi
-  done
+  done < <(printf '%s\n' "$TAGS" | sed -n 's/^PUSHCUR //p')
   # 1b. force push anywhere (--force*, -f in short flags, +refspec, --mirror)
   if has FORCE; then
     deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."

@@ -9,7 +9,7 @@ import { homedir } from 'node:os';
 import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
-import { createLauncher } from './launcher.mjs';
+import { createLauncher, BASE } from './launcher.mjs';
 import { createWayfinder } from './wayfinder.mjs';
 import { nextBattle } from './static/hexmap.mjs';
 import { qrTerminal, qrSvg } from './qr.mjs';
@@ -243,12 +243,12 @@ export function createApp({ duelsDir, launcher, wayfinder, token = process.env.D
         const f = join(DUELS, m[1], m[2]);
         return existsSync(f) ? send(res, 200, await readFile(f, 'utf8'), 'text/plain; charset=utf-8') : send(res, 404, 'not found', 'text/plain');
       }
-      // the live build diff: working tree vs origin/main (all committed + in-progress changes).
+      // the live build diff: working tree vs origin/<BASE> (all committed + in-progress changes).
       if ((m = p.match(/^\/api\/d\/([^/]+)\/diff$/)) && SLUG.test(m[1])) {
         const dm = readDuelMeta(DUELS, m[1]);
         if (!dm || !dm.worktree || !existsSync(dm.worktree)) return send(res, 200, '', 'text/plain; charset=utf-8');
         let diff = '';
-        try { diff = execFileSync('git', ['-C', dm.worktree, 'diff', dm.base || 'origin/main'], { maxBuffer: 8e6 }).toString(); } catch {}
+        try { diff = execFileSync('git', ['-C', dm.worktree, 'diff', dm.base || `origin/${BASE}`], { maxBuffer: 8e6 }).toString(); } catch {}
         if (!diff.trim()) { try { diff = execFileSync('git', ['-C', dm.worktree, 'diff', 'HEAD'], { maxBuffer: 8e6 }).toString(); } catch {} }
         return send(res, 200, diff, 'text/plain; charset=utf-8');
       }

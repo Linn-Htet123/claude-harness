@@ -9,9 +9,8 @@ ID="${1:?ID like MMV-278}"; SLUG="${2:?slug like evening-ritual}"
 TITLE="${3:-$SLUG}"; URL="${4:-$ID}"   # 4th arg = ticket URL (Linear / GitHub / Jira); defaults to the id
 CAP="${5:-$SLUG}"
 NAME="$(echo "$ID-$SLUG" | tr '[:upper:]' '[:lower:]')"   # OpenSpec needs lowercase kebab-case
-case "$NAME$CAP" in *$'\n'*) echo "bad id/slug/capability: no newlines"; exit 1 ;; esac
-printf '%s' "$NAME" | grep -Eq '^[a-z0-9][a-z0-9-]*$' || { echo "bad id/slug: '$NAME' (use letters, digits, dashes)"; exit 1; }
-printf '%s' "$CAP" | grep -Eq '^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*$' || { echo "bad capability: '$CAP' (kebab-case, like user-auth or identity/user-auth)"; exit 1; }
+[[ $NAME =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "bad id/slug: '$NAME' (use letters, digits, dashes)"; exit 1; }
+[[ $CAP =~ ^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*$ ]] || { echo "bad capability: '$CAP' (kebab-case, like user-auth or identity/user-auth)"; exit 1; }
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 DIR="$ROOT/openspec/changes/$NAME"
 TPL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../templates" && pwd)"

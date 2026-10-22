@@ -564,15 +564,18 @@ test('/connect says local when bound to loopback without a Tailscale HTTPS host'
   const { root } = fixtureRoot();
   const saved = process.env.DUEL_HTTPS_HOST; delete process.env.DUEL_HTTPS_HOST;
   const at = (app, host) => new Promise(r => app.listen(0, host, () => r(`http://127.0.0.1:${app.address().port}`)));
+  let a, b;
   try {
-    const a = createApp({ duelsDir: root, token: 't' }); const ba = await at(a, '127.0.0.1');
+    a = createApp({ duelsDir: root, token: 't' }); const ba = await at(a, '127.0.0.1');
     assert.equal((await (await fetch(ba + '/connect')).json()).local, true, 'loopback bind -> local');
-    const b = createApp({ duelsDir: root, token: 't' }); const bb = await at(b, '0.0.0.0');
+    b = createApp({ duelsDir: root, token: 't' }); const bb = await at(b, '0.0.0.0');
     assert.equal((await (await fetch(bb + '/connect')).json()).local, false, 'LAN bind -> not local');
     process.env.DUEL_HTTPS_HOST = 'box.tail.ts.net';
     assert.equal((await (await fetch(ba + '/connect')).json()).local, false, 'tailscale https -> not local');
-    a.close(); b.close();
-  } finally { if (saved === undefined) delete process.env.DUEL_HTTPS_HOST; else process.env.DUEL_HTTPS_HOST = saved; }
+  } finally {
+    a?.close(); b?.close();
+    if (saved === undefined) delete process.env.DUEL_HTTPS_HOST; else process.env.DUEL_HTTPS_HOST = saved;
+  }
 });
 
 test('loopback requests bypass the token entirely', async () => {
