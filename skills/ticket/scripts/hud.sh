@@ -41,8 +41,8 @@ stage_of() { grep -m1 '^stage:' "$1/index.md" 2>/dev/null | sed 's/stage: *//'; 
 change_dirs() { for d in "$ROOT"/openspec/changes/*/ "$ROOT"/docs/changes/*/; do [ -d "$d" ] && [ "$(basename "$d")" != archive ] && echo "${d%/}"; done; }
 # all spec text of one change (OpenSpec: specs/*/spec.md; old layout: spec.md)
 spec_text() { if [ -d "$1/specs" ]; then find "$1/specs" -name spec.md -exec cat {} + 2>/dev/null; else cat "$1/spec.md" 2>/dev/null; fi; }
-spec_file() { find "$1/specs" -name spec.md 2>/dev/null | head -1; [ -f "$1/spec.md" ] && echo "$1/spec.md"; }
-pick_folder() { change_dirs | while read -r d; do echo "$(stat -f %m "$d") $d"; done | sort -rn | head -1 | cut -d' ' -f2-; }
+spec_file() { { find "$1/specs" -name spec.md; ls "$1/spec.md"; } 2>/dev/null | head -1; }
+pick_folder() { ls -td "$ROOT"/openspec/changes/*/ "$ROOT"/docs/changes/*/ 2>/dev/null | grep -v '/archive/$' | head -1 | sed 's|/$||'; }
 [ -z "$DIR" ] && DIR="$(pick_folder)"
 case "$DIR" in /*) ;; "") ;; *) DIR="$ROOT/$DIR" ;; esac
 [ -n "$DIR" ] && [ ! -d "$DIR" ] && DIR=""
@@ -74,10 +74,10 @@ gather() {
   fi
   # all change folders: "folder|stage"
   CHANGES=""; N_CHANGES=0
-  for d in $(change_dirs); do
+  while IFS= read -r d; do
     [ -f "$d/index.md" ] || continue
     CHANGES="$CHANGES$(basename "$d")|$(stage_of "$d")"$'\n'; N_CHANGES=$((N_CHANGES+1))
-  done
+  done < <(change_dirs)
   # spec facts for DIR
   STAGE=""; REQ=0; HAPPY=0; EDGE=0; EDGE_MISSING=""; T_DONE=0; T_ALL=0; GATE=""
   if [ -n "$DIR" ]; then
@@ -85,8 +85,8 @@ gather() {
     SPEC_TXT="$(spec_text "$DIR")"
     if [ -n "$SPEC_TXT" ]; then
       REQ="$(printf '%s\n' "$SPEC_TXT" | grep -c '^### Requirement:')"
-      HAPPY="$(printf '%s\n' "$SPEC_TXT" | grep -ci '^#### Scenario:.*happy')"
-      EDGE="$(printf '%s\n' "$SPEC_TXT" | grep -ci '^#### Scenario:.*edge')"
+      HAPPY="$(printf '%s\n' "$SPEC_TXT" | grep -ciE '^#### Scenario: S[0-9]+ happy')"
+      EDGE="$(printf '%s\n' "$SPEC_TXT" | grep -ciE '^#### Scenario: S[0-9]+ edge')"
       if [ "$IS_GIT" = 1 ]; then
         for sid in $(printf '%s\n' "$SPEC_TXT" | grep -oiE '^#### Scenario: S[0-9]+ edge' | grep -oE 'S[0-9]+'); do
           git -C "$ROOT" grep -qiE "$sid edge" -- ':!docs' ':!openspec' 2>/dev/null || EDGE_MISSING="$EDGE_MISSING $sid"
@@ -101,7 +101,12 @@ gather() {
       T_DONE="$(grep -E '^\| T[0-9]+ ' "$DIR/tickets.md" | grep -ci '| *done *|$')"
     fi
     case "$STAGE" in spec|ready|implement|qa|done)
-      if bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
+      local key; key="$DIR $(find "$DIR" -type f -exec stat -f %m {} + 2>/dev/null | sort -n | tail -1)"
+      if [ "$key" != "${GATE_KEY:-}" ]; then
+        GATE_KEY="$key"
+        if bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE_OK=1; else GATE_OK=0; fi
+      fi
+      if [ "$GATE_OK" = 1 ]; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
     esac
   fi
   # agents in this Herdr workspace
@@ -134,10 +139,10 @@ suggest() {
   SUG_N=0
   local rel="${DIR#$ROOT/}"
   if [ "$IS_GIT" = 0 ]; then
-    add_sug "This folder is not a git repo. Make it one first." "shell:git init && harness-init $ROOT"
+    add_sug "This folder is not a git repo. Make it one first." "shell:git init && harness-init $(printf '%q' "$ROOT")"
   fi
   if [ ! -s "$ROOT/CLAUDE.md" ]; then
-    add_sug "No CLAUDE.md. Set the repo up, then let Claude learn it." "shell:harness-init $ROOT && claude '/onboard-repo'"
+    add_sug "No CLAUDE.md. Set the repo up, then let Claude learn it." "shell:harness-init $(printf '%q' "$ROOT") && claude '/onboard-repo'"
   fi
   if [ -n "$DIR" ]; then
     local next; next="$(cd "$ROOT" && bash "$S/next-step.sh" "$rel" 2>/dev/null | grep '^NEXT:' | sed 's/^NEXT: *//' | sed 's/ *—.*//' | xargs)"
@@ -258,7 +263,7 @@ EDITOR_CMD="${HUD_EDITOR:-}"   # set HUD_EDITOR=cursor in your shell to override
 [ -z "$EDITOR_CMD" ] && { command -v code >/dev/null && EDITOR_CMD="code" || { command -v cursor >/dev/null && EDITOR_CMD="cursor"; }; }
 open_editor() {
   [ -n "$EDITOR_CMD" ] || { LAST="No cursor/code command found. Install the shell command from the editor's command palette."; return 0; }
-  if [ -n "$DIR" ] && [ -n "$(spec_file "$DIR")" ]; then "$EDITOR_CMD" "$ROOT" "$(spec_file "$DIR" | head -1)" >/dev/null 2>&1 & else "$EDITOR_CMD" "$ROOT" >/dev/null 2>&1 & fi
+  if [ -n "$DIR" ] && [ -n "$(spec_file "$DIR")" ]; then "$EDITOR_CMD" "$ROOT" "$(spec_file "$DIR")" >/dev/null 2>&1 & else "$EDITOR_CMD" "$ROOT" >/dev/null 2>&1 & fi
   LAST="Opened $NAME in $EDITOR_CMD (Source Control tab shows the diff; cmd+shift+v previews .md)"
 }
 show_diff() {
@@ -280,7 +285,7 @@ open_doc() {
   f="$(sed -n "${pick}p" "$list")"; rm -f "$list"
   [ -n "$f" ] || return 0
   if [ -n "$EDITOR_CMD" ]; then "$EDITOR_CMD" "$f" >/dev/null 2>&1 & LAST="Opened ${f#$ROOT/} in $EDITOR_CMD"
-  else run_here_or_pane "less -R '$f'"; fi
+  else run_here_or_pane "less -R $(printf '%q' "$f")"; fi
 }
 
 # ---------- render ----------
@@ -396,8 +401,8 @@ while :; do
     o) open_doc ;;
     d) show_diff ;;
     t) [ "$TARGET" = pane ] && TARGET=here || { [ "$IN_HERDR" = 1 ] && TARGET=pane || LAST="Not inside Herdr: target stays here"; } ;;
-    c) echo; i=1; for d in $(change_dirs); do printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "$d")"; i=$((i+1)); done
-       printf '> '; read -r n; j=1; for d in $(change_dirs); do [ "$j" = "$n" ] && DIR="$d"; j=$((j+1)); done ;;
+    c) echo; i=1; while IFS= read -r d; do printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "$d")"; i=$((i+1)); done < <(change_dirs)
+       printf '> '; read -r n; d="$(change_dirs | sed -n "${n}p")"; [ -n "$d" ] && DIR="$d" ;;
     r) refresh_pr; LAST="Refreshed" ;;
     q) rm -f "$SKILLS_CACHE"; clear; exit 0 ;;
   esac

@@ -73,21 +73,15 @@ for T in "${TARGETS[@]}"; do
 
   # commands/<group>/ and skills/<name>/  -> one symlink per directory
   shopt -s nullglob
-  for d in "$SRC/commands"/*/; do
-    base="$(basename "$d")"
-    if [ "$MODE" = "uninstall" ]; then
-      unlink_one "$T/commands/$base"
-    else
-      link_one "${d%/}" "$T/commands/$base"
-    fi
-  done
-  for d in "$SRC/skills"/*/; do
-    base="$(basename "$d")"
-    if [ "$MODE" = "uninstall" ]; then
-      unlink_one "$T/skills/$base"
-    else
-      link_one "${d%/}" "$T/skills/$base"
-    fi
+  for kind in commands skills; do
+    for d in "$SRC/$kind"/*/; do
+      base="$(basename "$d")"
+      if [ "$MODE" = "uninstall" ]; then
+        unlink_one "$T/$kind/$base"
+      else
+        link_one "${d%/}" "$T/$kind/$base"
+      fi
+    done
   done
   shopt -u nullglob
 done

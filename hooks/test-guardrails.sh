@@ -38,21 +38,51 @@ t "Read .env.example"                allow "$(r '/x/.env.example')"
 t "pnpm test"                        allow "$(b 'pnpm test')"
 t "git push (no target)"             allow "$(b 'git push')"
 
-# 6. gh pr create needs the /review-gate mark for HEAD (temp repo as cwd)
-REPO="$(mktemp -d)"; trap 'rm -rf "$REPO"' EXIT
-git -C "$REPO" init -q && git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m one
-c() { printf '{"tool_name":"Bash","cwd":"%s","tool_input":{"command":"%s"}}' "$1" "$2"; }
-t "gh pr create, no review"          deny  "$(c "$REPO" 'gh pr create --fill')"
-t "gh pr view, no review (allowed)"  allow "$(c "$REPO" 'gh pr view')"
-(cd "$REPO" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
-t "gh pr create, reviewed"           allow "$(c "$REPO" 'gh pr create --fill')"
-git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m two
-t "gh pr create, new commit"         deny  "$(c "$REPO" 'gh pr create --fill')"
-t "gh pr create, not a git repo"     allow "$(c /tmp 'gh pr create --fill')"
-t "cd x && gh pr create"             deny  "$(c "$REPO" 'cd . && gh pr create --fill')"
-t "push; gh pr create"               deny  "$(c "$REPO" 'git push -u origin x; gh pr create --fill')"
-t "heredoc mentions it (allowed)"    allow "$(c "$REPO" "python3 - <<'PY'\\ngh pr create in text\\nPY")"
-t "commit msg mentions it (allowed)" allow "$(c "$REPO" 'git commit -m \"run gh pr create later\"')"
-t "grep for it (allowed)"            allow "$(c "$REPO" 'grep -n \"gh pr create\" README.md')"
+# 2b + 6. PR merge / create, built with jq so quotes and newlines are exact.
+# U = repo with an unreviewed HEAD, V = repo whose HEAD has the review mark.
+U="$(mktemp -d)"; V="$(mktemp -d)"; N="$(mktemp -d)"; trap 'rm -rf "$U" "$V" "$N"' EXIT
+for r in "$U" "$V"; do git -C "$r" init -q && git -C "$r" -c user.email=t@t -c user.name=t commit -q --allow-empty -m one; done
+(cd "$V" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
+c() { jq -nc --arg d "$1" --arg c "$2" '{tool_name:"Bash",cwd:$d,tool_input:{command:$c}}'; }
+NL=$'\n'; P='gh pr'
+
+t "merge: gh -R o/r pr merge"          deny  "$(c "$V" "gh -R o/r pr merge 1")"
+t "merge: gh api PUT .../merge"        deny  "$(c "$V" "gh api -X PUT repos/o/r/pulls/1/merge")"
+t "merge: graphql mergePullRequest"    deny  "$(c "$V" "gh api graphql -f query='mutation{mergePullRequest(input:{})}'")"
+
+t "create: no review"                  deny  "$(c "$U" "$P create --fill")"
+t "create: reviewed"                   allow "$(c "$V" "$P create --fill")"
+t "create: view is fine"               allow "$(c "$U" "$P view")"
+t "create: --help is fine"             allow "$(c "$U" "$P create --help")"
+t "create: new commit after review"    deny  "$(cd "$V" && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m two; c "$V" "$P create --fill")"
+(cd "$V" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
+t "create: not a git repo (fail closed)" deny "$(c "$N" "gh -R o/r pr create --head feat")"
+
+t "bypass: gh pr new"                  deny  "$(c "$U" "$P new --fill")"
+t "bypass: gh -R o/r pr create"        deny  "$(c "$U" "gh -R o/r pr create --fill")"
+t "bypass: GH_REPO=x gh pr create"     deny  "$(c "$U" "GH_REPO=o/r $P create --fill")"
+t "bypass: env gh"                     deny  "$(c "$U" "env $P create --fill")"
+t "bypass: command gh"                 deny  "$(c "$U" "command $P create")"
+t "bypass: full path gh"               deny  "$(c "$U" "/opt/homebrew/bin/$P create")"
+t "bypass: backslash gh"               deny  "$(c "$U" "\\$P create")"
+t "bypass: bash -c"                    deny  "$(c "$U" "bash -c '$P create --fill'")"
+t "bypass: eval"                       deny  "$(c "$U" "eval \"$P create\"")"
+t "bypass: backticks"                  deny  "$(c "$U" "echo \`$P create\`")"
+t "bypass: \$() in double quotes"      deny  "$(c "$U" "echo \"\$($P create)\"")"
+t "bypass: { ...; }"                   deny  "$(c "$U" "{ $P create; }")"
+t "bypass: xargs"                      deny  "$(c "$U" "echo x | xargs $P create")"
+t "bypass: gh api POST pulls"          deny  "$(c "$U" "gh api repos/o/r/pulls -f head=b -f base=dev -f title=t")"
+t "bypass: here-string <<<"            deny  "$(c "$U" "cat <<<x${NL}$P create --fill")"
+t "bypass: quoted <<EOF"               deny  "$(c "$U" "echo '<<EOF'${NL}$P create --fill")"
+t "bypass: unquoted heredoc runs \$()" deny  "$(c "$U" "cat <<EOF${NL}\$($P create)${NL}EOF")"
+t "bypass: cd other repo (reviewed cwd)" deny "$(c "$V" "cd $U && $P create --fill")"
+t "bypass: commit in same command"     deny  "$(c "$V" "git commit --allow-empty -m w && $P create --fill")"
+t "bypass: touch a mark"               deny  "$(c "$U" "mkdir -p .git/review-gate && touch .git/review-gate/abc")"
+
+t "mention: commit msg, multi-line"    allow "$(c "$U" "git commit -m 'subject${NL}$P create is next'")"
+t "mention: git log --grep with |"     allow "$(c "$U" "git log --grep 'a|$P create'")"
+t "mention: quoted heredoc body"       allow "$(c "$U" "python3 - <<'PY'${NL}$P create in text${NL}PY")"
+t "mention: grep"                      allow "$(c "$U" "grep -n \"$P create\" README.md")"
+t "run the mark script (allowed)"      allow "$(c "$U" "bash ~/.claude/skills/review-gate/scripts/mark-reviewed.sh passed")"
 echo; echo "passed=$PASS failed=$FAIL"
 [ "$FAIL" = 0 ]

@@ -15,7 +15,7 @@ warn() { printf '  \033[33m! %s\033[0m\n' "$1"; }
 
 echo "==> 1. tools (brew)"
 command -v brew >/dev/null || { echo "Homebrew missing: https://brew.sh  — install it, then re-run."; exit 1; }
-for pkg in jq gh herdr; do
+for pkg in jq gh herdr node; do
   if command -v "$pkg" >/dev/null; then skip "$pkg already installed"; else brew install "$pkg" >/dev/null 2>&1 && ok "installed $pkg" || warn "could not install $pkg"; fi
 done
 command -v claude >/dev/null || warn "claude CLI not found. Install Claude Code first: https://code.claude.com"

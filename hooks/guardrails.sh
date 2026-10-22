@@ -5,11 +5,12 @@
 #
 # Blocks (Larry's rules, enforced in every project, cannot be talked out of):
 #   1. git push to main/master (force or not), and any force push
-#   2. merging a PR with the gh CLI                -> a human merges
+#   2. merging a PR (gh pr merge, gh api .../merge)  -> a human merges
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
 #   4. rm -rf on root / home
 #   5. reading a real .env file into context (cat/less/head/tail/... or the Read tool)
-#   6. gh pr create before /review-gate marked the current commit as reviewed
+#   6. opening a PR before /review-gate marked the current commit as reviewed,
+#      and writing review marks by hand
 #
 # Test it: hooks/test-guardrails.sh
 
@@ -45,8 +46,12 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
     deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
   fi
 
-  # 2. merging a pull request
-  if printf '%s' "$CMD" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge'; then
+  # gh intent (PR create / merge, flags, wrappers, gh api) comes from gh-intent.pl
+  TAGS="$(printf '%s' "$CMD" | /usr/bin/perl "$(dirname "${BASH_SOURCE[0]}")/gh-intent.pl" 2>/dev/null || echo PARSE_FAIL)"
+  has() { printf '%s\n' "$TAGS" | grep -qx "$1"; }
+
+  # 2. merging a pull request (gh pr merge with any flags, gh api .../merge, graphql)
+  if has MERGE; then
     deny "Blocked: merging is a human decision. Post the PR link and stop."
   fi
 
@@ -76,17 +81,24 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
 
   # 6. opening a PR on a commit that /review-gate did not pass.
   #    The mark is <git-common-dir>/review-gate/<HEAD sha>, written by
-  #    skills/review-gate/scripts/mark-reviewed.sh. Not a git repo -> allow.
-  #    Only a real command counts: heredoc bodies are dropped, and gh must
-  #    start a command (line start, or after ; & | ( then do), not sit in a string.
-  RUN="$(printf '%s\n' "$CMD" | awk '
-    d != "" { t=$0; gsub(/^[ \t]+|[ \t]+$/, "", t); if (t == d) d=""; next }
-    { print; if (match($0, /<<-?[ \t]*["\047]?[A-Za-z_][A-Za-z0-9_]*/)) { d=substr($0, RSTART, RLENGTH); sub(/^<<-?[ \t]*["\047]?/, "", d) } }')"
-  if printf '%s\n' "$RUN" | grep -Eq '(^|[;&|(]|then|do)[[:space:]]*gh[[:space:]]+pr[[:space:]]+create'; then
+  #    skills/review-gate/scripts/mark-reviewed.sh. This catches forgetting;
+  #    it is a nudge, not a lock (see hooks/README.md).
+  if has MARKWRITE; then
+    deny "Blocked: review marks are written only by /review-gate (mark-reviewed.sh)."
+  fi
+  if has PARSE_FAIL && printf '%s' "$CMD" | grep -q 'gh'; then
+    deny "Blocked: could not parse this gh command. Run gh pr create as its own simple command."
+  fi
+  if has CREATE && ! has HELP; then
+    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C)."
+    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command."
     D="${CWD:-$PWD}"
     GD="$(git -C "$D" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
     SHA="$(git -C "$D" rev-parse HEAD 2>/dev/null || true)"
-    if [ -n "$GD" ] && [ -n "$SHA" ] && [ ! -f "$GD/review-gate/$SHA" ]; then
+    if [ -z "$GD" ] || [ -z "$SHA" ]; then
+      deny "Blocked: gh pr create must run from inside the repo folder, so the review mark can be checked."
+    fi
+    if [ ! -f "$GD/review-gate/$SHA" ]; then
       deny "Blocked: commit ${SHA:0:7} has no review. Run /review-gate first; open the PR after it passes."
     fi
   fi

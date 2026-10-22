@@ -4,10 +4,14 @@ Wired in `~/.claude/settings.json` (backup in `~/.claude/backups/`).
 
 | Hook | Event | What it does |
 |---|---|---|
-| `guardrails.sh` | `PreToolUse` on `Bash\|Read` | denies: push to main/master, force push, PR merge via gh, schema push, `rm -rf ~`, reading real `.env` files, `gh pr create` before `/review-gate` marked HEAD as reviewed |
+| `guardrails.sh` | `PreToolUse` on `Bash\|Read` | denies: push to main/master, force push, PR merge via gh, schema push, `rm -rf ~`, reading real `.env` files, opening a PR (`gh pr create\|new`, `gh api` POST pulls) before `/review-gate` marked HEAD as reviewed. `gh-intent.pl` parses the command (quotes, heredocs, `-R`, `env`/`bash -c` wrappers) |
 | `notify.sh` | `Notification` (`permission_prompt`, `idle_prompt\|agent_needs_input`) | macOS banner + Glass sound "Claude needs your permission / is waiting for you" |
 | (inline) | `Stop` | plays Hero.aiff — the "ding" when Claude finishes a turn |
 | `statusline.sh` | `statusLine` | `model \| ctx 37% [###.......] \| branch \| $cost` — warns at 40% |
+
+## The review gate is a nudge, not a lock
+
+Rule 6 stops Claude from forgetting `/review-gate`. The mark is a file in `.git/review-gate/`, so an agent that really wants to skip review can still fake it (for example with the Write tool, which this hook does not watch). The human merge is the real lock.
 
 ## Why hooks
 

@@ -20,7 +20,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
-3. Use the current branch (create one from the repo's base branch if you are on it). When called from `/ticket`, do NOT open a PR: `/ticket` Step 6 runs the review gate and `/ship-it`. Called on its own, open a draft PR that closes the spec issue and tickets.
+3. Use the current branch (create one from the repo's base branch if you are on it). Do NOT open a PR here, not even a draft: the guardrails hook blocks `gh pr create` until `/review-gate` passes. From `/ticket`, Step 6 does the review and the PR.
 
 4. Use **implementer subagents** to implement each ticket. Each implementer subagent should work in its own worktree, on its own branch. Each one works test-first and titles tests with the scenario ids (`S1 happy: ...`, `S2 edge: ...`), and ticks its `- [x]` boxes in `tasks.md`.
 
@@ -28,7 +28,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
-7. Once all tickets are complete: when called from `/ticket`, stop and report which S-ids are green (Step 6 reviews). On its own, run /code-review and /ponytail-review on the branch, fix the real findings in a single **implementer subagent**, then mark the PR as ready for review.
+7. Once all tickets are complete: when called from `/ticket`, stop and report which S-ids are green (Step 6 reviews). On its own, commit, run `/review-gate`, fix the blockers in a single **implementer subagent** and run it again until it passes, then `/ship-it` opens the PR (it closes the spec issue and tickets).
 
 8. Never merge.
 

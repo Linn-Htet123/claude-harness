@@ -20,7 +20,6 @@ project-packs/
 | `.worktreeinclude` | **yes** | copies `.env*` into `claude --worktree` checkouts. |
 | `docs/agents/issue-tracker.md` | **yes** | tells Matt Pocock's skills (/wayfinder, /to-spec, /to-tickets) which tracker to use. |
 | `openspec/` | **yes** | made by `openspec init --tools none`. Each `/ticket` = one change in `openspec/changes/<id>-<slug>/`; `openspec/specs/` = living spec library. |
-| `docs/changes/README.md` | **yes** (old repos only) | short pointer to `openspec/changes/`. Old folders in `docs/changes/` still work. |
 | `CLAUDE.md` | **yes** | see `templates/CLAUDE.md.template` at the harness root; keep it under 150 lines. |
 
 ## Use — one command for ANY repo (new or existing)

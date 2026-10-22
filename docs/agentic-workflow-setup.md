@@ -138,7 +138,7 @@ Nothing was pushed, merged, deployed, or written to the team repo's tracked file
 ## 5. Not done — your call (in order of value)
 
 1. **Commit this repo** so the harness is saved: `cd ~/GITHUB/claude-harness && git add -A && git commit -m "harness: ticket loop, qa/verifier/scout, hooks on"`.
-2. **PR the MMV tracked pack** (`project-packs/manifest-movies-next/`): `.mcp.json`, `.worktreeinclude`, `docs/agents/issue-tracker.md`, `docs/changes/README.md` (now a short pointer to `openspec/changes/`). MMV also needs `openspec init --tools none` once, in the same PR. Read them first; they touch the team repo.
+2. **PR the MMV tracked pack** (`project-packs/manifest-movies-next/`): `.mcp.json`, `.worktreeinclude`, `docs/agents/issue-tracker.md`. MMV also needs `openspec init --tools none` once, in the same PR. Read them first; they touch the team repo.
 3. **`/setup-matt-pocock-skills`** inside MMV, pick Linear. That makes `/wayfinder`, `/to-spec`, `/to-tickets`, `/triage` work (Anthony's map). It writes into the repo → PR.
 4. ~~Herdr~~ — installed 2026-09-10, see section 2b. If the tmux-style prefix keys annoy you after a week, stay on the desktop app + `claude --remote-control`.
 5. **PostHog plugin** for `/measure`: `claude plugin install posthog` (gives `/posthog:experiments`, `/posthog:surveys`). The PostHog MCP you already have works too.

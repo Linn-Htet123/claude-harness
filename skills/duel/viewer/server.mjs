@@ -49,6 +49,11 @@ export function isLoopback(req) {
   // header means the real client is remote, so it must present the token.
   const h = req.headers || {};
   if (h['x-forwarded-for'] || h['cf-connecting-ip'] || h['x-real-ip'] || h['forwarded']) return false;
+  // DNS rebinding: a web page on evil.com can resolve to 127.0.0.1 and reach us
+  // from the desktop browser. Its Host header still says evil.com, so loopback
+  // trust needs a localhost Host too; anything else must carry the token.
+  const host = String(h.host || '').replace(/:\d+$/, '').toLowerCase();
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) return false;
   const a = req.socket?.remoteAddress || '';
   return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1' || a.startsWith('127.');
 }
@@ -444,10 +449,10 @@ if (isMain) {
   const port = Number(process.env.PORT || 4321);
   const DUELS = process.env.DUELS_DIR || join(homedir(), '.claude', 'duels');
   // Auto-token by default so phone-connect just works; loopback is trusted, so
-  // this never gets in the desktop browser's way. Bind 0.0.0.0 so the phone can
-  // reach it; DUEL_BIND=127.0.0.1 is the escape hatch to stay localhost-only.
+  // this never gets in the desktop browser's way. Localhost-only by default;
+  // DUEL_BIND=0.0.0.0 opens it to the LAN so a phone can reach it.
   const token = resolveToken(DUELS);
-  const HOST = process.env.DUEL_BIND || '0.0.0.0';
+  const HOST = process.env.DUEL_BIND || '127.0.0.1';
   const launcher = createLauncher({ maxConcurrent: Number(process.env.DUEL_MAX_CONCURRENT) || 3 });
   const wayfinder = createWayfinder({});
   const server = createApp({ launcher, wayfinder, token });

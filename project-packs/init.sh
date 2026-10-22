@@ -52,7 +52,8 @@ add "$T/.worktreeinclude" "$REPO/.worktreeinclude"
 # 5. openspec (each /ticket = one change in openspec/changes/) + docs
 if [ -d "$REPO/openspec" ]; then echo "  keep   openspec/"
 elif command -v openspec >/dev/null 2>&1; then
-  (cd "$REPO" && openspec init --tools none >/dev/null) && echo "  added  openspec/ (openspec init --tools none)"
+  if (cd "$REPO" && openspec init --tools none >/dev/null 2>&1); then echo "  added  openspec/ (openspec init --tools none)"
+  else echo "  FAIL   openspec init failed. Run it by hand: cd $REPO && openspec init --tools none"; fi
 else echo "  skip   openspec/ (openspec not on PATH: npm i -g @fission-ai/openspec, then: cd $REPO && openspec init --tools none)"; fi
 add "$T/docs/agents/issue-tracker.md" "$REPO/docs/agents/issue-tracker.md"
 mkdir -p "$REPO/docs/decisions"; [ -e "$REPO/docs/decisions/README.md" ] || {

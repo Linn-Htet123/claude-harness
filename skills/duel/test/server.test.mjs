@@ -497,17 +497,24 @@ test('decompose 400s when there is no resolved plan to split', async () => {
 
 test('isLoopback recognizes loopback addresses only', () => {
   for (const a of ['127.0.0.1', '::1', '::ffff:127.0.0.1', '127.0.0.5'])
-    assert.equal(isLoopback({ socket: { remoteAddress: a } }), true, a);
+    assert.equal(isLoopback({ socket: { remoteAddress: a }, headers: { host: 'localhost:4321' } }), true, a);
   for (const a of ['192.168.1.9', '10.0.0.2', '100.64.1.1', ''])
-    assert.equal(isLoopback({ socket: { remoteAddress: a } }), false, a);
+    assert.equal(isLoopback({ socket: { remoteAddress: a }, headers: { host: 'localhost:4321' } }), false, a);
+});
+
+test('isLoopback refuses a loopback socket with a foreign Host (DNS rebinding)', () => {
+  for (const host of ['evil.com', 'evil.com:4321', '192.168.1.9:4321', ''])
+    assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: { host } }), false, host || '(none)');
+  for (const host of ['localhost', '127.0.0.1:4321', '[::1]:4321', 'LOCALHOST:4321'])
+    assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: { host } }), true, host);
 });
 
 test('isLoopback treats proxied/tunneled requests as remote (token required)', () => {
   // cloudflared/ngrok forward from localhost but add a forwarding header — must NOT be trusted
   for (const hdr of ['x-forwarded-for', 'cf-connecting-ip', 'x-real-ip', 'forwarded'])
-    assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: { [hdr]: '1.2.3.4' } }), false, hdr);
+    assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: 'localhost', [hdr]: '1.2.3.4' } }), false, hdr);
   // a genuine local request (no forwarding header) is still trusted
-  assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: {} }), true);
+  assert.equal(isLoopback({ socket: { remoteAddress: '127.0.0.1' }, headers: { host: 'localhost' } }), true);
 });
 
 test('resolveToken persists a stable token and honors the env override', () => {
