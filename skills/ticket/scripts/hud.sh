@@ -101,12 +101,8 @@ gather() {
       T_DONE="$(grep -E '^\| T[0-9]+ ' "$DIR/tickets.md" | grep -ci '| *done *|$')"
     fi
     case "$STAGE" in spec|ready|implement|qa|done)
-      local key; key="$DIR $(find "$DIR" -type f -exec stat -f %m {} + 2>/dev/null | sort -n | tail -1)"
-      if [ "$key" != "${GATE_KEY:-}" ]; then
-        GATE_KEY="$key"
-        if bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE_OK=1; else GATE_OK=0; fi
-      fi
-      if [ "$GATE_OK" = 1 ]; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
+      # NO_VALIDATE: skip the ~1 s openspec validate on every refresh; Step 3 runs it in full
+      if NO_VALIDATE=1 bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
     esac
   fi
   # agents in this Herdr workspace
@@ -402,7 +398,7 @@ while :; do
     d) show_diff ;;
     t) [ "$TARGET" = pane ] && TARGET=here || { [ "$IN_HERDR" = 1 ] && TARGET=pane || LAST="Not inside Herdr: target stays here"; } ;;
     c) echo; i=1; while IFS= read -r d; do printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "$d")"; i=$((i+1)); done < <(change_dirs)
-       printf '> '; read -r n; d="$(change_dirs | sed -n "${n}p")"; [ -n "$d" ] && DIR="$d" ;;
+       printf '> '; read -r n; case "$n" in ''|*[!0-9]*) ;; *) d="$(change_dirs | sed -n "${n}p")"; [ -n "$d" ] && DIR="$d" ;; esac ;;
     r) refresh_pr; LAST="Refreshed" ;;
     q) rm -f "$SKILLS_CACHE"; clear; exit 0 ;;
   esac

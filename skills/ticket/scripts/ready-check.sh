@@ -23,7 +23,8 @@ LEFT="$(grep -rn '{{' "$DIR" --include='*.md' 2>/dev/null | grep -v 'research.md
 [ "$LEFT" = "0" ] && ok "no {{placeholders}} left (research.md may still have some)" || bad "$LEFT placeholder line(s) still contain {{...}} — run: grep -rn '{{' $DIR"
 
 # spec: every requirement has >=1 happy and >=1 edge scenario
-for S in $SPECS; do
+while IFS= read -r S; do
+  [ -n "$S" ] || continue
   REQ="$(grep -c '^### Requirement:' "$S")"
   [ "$REQ" -ge 1 ] && ok "${S#$DIR/} has $REQ requirement(s)" || bad "${S#$DIR/} has no '### Requirement:' block"
   awk '
@@ -36,7 +37,7 @@ for S in $SPECS; do
     }
   ' "$S" | tee /dev/stderr | grep -q '^FAIL' && FAIL=1
   grep -Eq '^#### Scenario: S[0-9]+' "$S" && ok "${S#$DIR/} scenarios carry ids (S1, S2, ...)" || bad "scenario titles must start with an id: '#### Scenario: S1 happy — ...'"
-done
+done <<< "$SPECS"
 
 # proposal: scope + at least one measurable hypothesis
 if [ -f "$DIR/proposal.md" ]; then

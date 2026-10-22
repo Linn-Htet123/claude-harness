@@ -10,7 +10,7 @@ TITLE="${3:-$SLUG}"; URL="${4:-$ID}"   # 4th arg = ticket URL (Linear / GitHub /
 CAP="${5:-$SLUG}"
 NAME="$(echo "$ID-$SLUG" | tr '[:upper:]' '[:lower:]')"   # OpenSpec needs lowercase kebab-case
 kebab() { printf '%s' "$1" | grep -Eq '^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*$'; }
-kebab "$NAME" || { echo "bad id/slug: '$NAME' (use letters, digits, dashes)"; exit 1; }
+printf '%s' "$NAME" | grep -Eq '^[a-z0-9][a-z0-9-]*$' || { echo "bad id/slug: '$NAME' (use letters, digits, dashes)"; exit 1; }
 kebab "$CAP"  || { echo "bad capability: '$CAP' (kebab-case, like user-auth or identity/user-auth)"; exit 1; }
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 DIR="$ROOT/openspec/changes/$NAME"

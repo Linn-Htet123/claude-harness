@@ -92,6 +92,7 @@ $('connect').onclick = () => spin($('connect'), async () => {
   let data;
   try { data = await (await fetch('/connect')).json(); }
   catch { toast('⚠︎ could not build a phone link'); return; }
+  if (data.local) { toast('Phone link needs the LAN: restart the viewer with DUEL_BIND=0.0.0.0'); return; }
   $('qrcode').innerHTML = data.svg;
   $('qrurl').textContent = data.url;
   $('qrcopy').onclick = async () => {

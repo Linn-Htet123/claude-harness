@@ -36,7 +36,6 @@ t "Read .env"                        deny  "$(r '/x/.env')"
 t "Read .env.local"                  deny  "$(r '/x/.env.local')"
 t "Read .env.example"                allow "$(r '/x/.env.example')"
 t "pnpm test"                        allow "$(b 'pnpm test')"
-t "git push (no target)"             allow "$(b 'git push')"
 
 # 2b + 6. PR merge / create, built with jq so quotes and newlines are exact.
 # U = repo with an unreviewed HEAD, V = repo whose HEAD has the review mark.
@@ -53,7 +52,7 @@ t "merge: graphql mergePullRequest"    deny  "$(c "$V" "gh api graphql -f query=
 t "create: no review"                  deny  "$(c "$U" "$P create --fill")"
 t "create: reviewed"                   allow "$(c "$V" "$P create --fill")"
 t "create: view is fine"               allow "$(c "$U" "$P view")"
-t "create: --help is fine"             allow "$(c "$U" "$P create --help")"
+t "create: --help counts (strict)"     deny  "$(c "$U" "$P create --help")"
 t "create: new commit after review"    deny  "$(cd "$V" && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m two; c "$V" "$P create --fill")"
 (cd "$V" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
 t "create: not a git repo (fail closed)" deny "$(c "$N" "gh -R o/r pr create --head feat")"
@@ -77,12 +76,36 @@ t "bypass: quoted <<EOF"               deny  "$(c "$U" "echo '<<EOF'${NL}$P crea
 t "bypass: unquoted heredoc runs \$()" deny  "$(c "$U" "cat <<EOF${NL}\$($P create)${NL}EOF")"
 t "bypass: cd other repo (reviewed cwd)" deny "$(c "$V" "cd $U && $P create --fill")"
 t "bypass: commit in same command"     deny  "$(c "$V" "git commit --allow-empty -m w && $P create --fill")"
-t "bypass: touch a mark"               deny  "$(c "$U" "mkdir -p .git/review-gate && touch .git/review-gate/abc")"
 
-t "mention: commit msg, multi-line"    allow "$(c "$U" "git commit -m 'subject${NL}$P create is next'")"
-t "mention: git log --grep with |"     allow "$(c "$U" "git log --grep 'a|$P create'")"
-t "mention: quoted heredoc body"       allow "$(c "$U" "python3 - <<'PY'${NL}$P create in text${NL}PY")"
-t "mention: grep"                      allow "$(c "$U" "grep -n \"$P create\" README.md")"
-t "run the mark script (allowed)"      allow "$(c "$U" "bash ~/.claude/skills/review-gate/scripts/mark-reviewed.sh passed")"
+t "bypass: comment with apostrophe"   deny  "$(c "$U" "# it's ready${NL}$P create --fill")"
+t "bypass: --help; then create"        deny  "$(c "$U" "$P create --help; $P create --fill")"
+t "bypass: heredoc named END-NOTE"     deny  "$(c "$U" "cat <<'END-NOTE'${NL}it's done${NL}END-NOTE${NL}$P create --fill")"
+t "bypass: graphql createPullRequest"  deny  "$(c "$U" "gh api graphql -f query='mutation { createPullRequest(input:{}) }'")"
+t "bypass: multi-line gh api POST"     deny  "$(c "$U" "gh api repos/o/r/pulls \\${NL} -f title=t -f head=b")"
+t "bypass: gh api -fhead= attached"    deny  "$(c "$U" "gh api repos/o/r/pulls -fhead=b -fbase=dev")"
+t "bypass: quoted \"gh\" pr create"     deny  "$(c "$U" "\"gh\" pr create --fill")"
+t "bypass: g''h pr 'create'"           deny  "$(c "$U" "g''h pr 'create' --fill")"
+t "bypass: --head other (reviewed)"    deny  "$(c "$V" "$P create --head other --fill")"
+t "bypass: -R other (reviewed)"        deny  "$(c "$V" "gh -R o/other pr create --fill")"
+t "bypass: git -c k=v commit && create" deny "$(c "$V" "git -c user.name=x commit -qm w && $P create --fill")"
+t "bypass: npm version && create"      deny  "$(c "$V" "npm version patch && $P create --fill")"
+t "merge: quoted \"gh\" pr merge"       deny  "$(c "$V" "\"gh\" pr merge 1")"
+t "merge: gh pr \\newline merge"        deny  "$(c "$V" "$P \\${NL} merge 1")"
+t "merge: enablePullRequestAutoMerge"  deny  "$(c "$V" "gh api graphql -f query='mutation{enablePullRequestAutoMerge(input:{})}'")"
+t "mention counts (strict)"            deny  "$(c "$U" "git commit -m 'next: $P create'")"
+t "other gh pr verbs (allowed)"        allow "$(c "$U" "gh pr view 3; gh pr list --search create; gh pr checks")"
+t "create from file body (reviewed)"   allow "$(c "$V" "$P create --title 'Add login' --body-file .git/pr-body.md")"
+
+# 1. pushes: the branch you are on, +refspec force, refs/heads/main
+M="$(mktemp -d)"; F="$(mktemp -d)"; trap 'rm -rf "$U" "$V" "$N" "$M" "$F"' EXIT
+git -C "$M" init -q -b main; git -C "$F" init -q -b main; git -C "$F" checkout -q -b feat
+t "push HEAD:refs/heads/main"          deny  "$(c "$F" "git push origin HEAD:refs/heads/main")"
+t "push +feat (force refspec)"         deny  "$(c "$F" "git push origin +feat")"
+t "push -uf (force in short flags)"    deny  "$(c "$F" "git push -uf origin feat")"
+t "bare push while on main"            deny  "$(c "$M" "git push")"
+t "push -u origin HEAD while on main"  deny  "$(c "$M" "git push -u origin HEAD")"
+t "bare push on a branch (allowed)"    allow "$(c "$F" "git push")"
+t "push branch && rm -f (allowed)"     allow "$(c "$F" "git push -u origin feat && rm -f x.tmp")"
+t "push tag on a branch (allowed)"     allow "$(c "$F" "git push origin v1.2.0")"
 echo; echo "passed=$PASS failed=$FAIL"
 [ "$FAIL" = 0 ]

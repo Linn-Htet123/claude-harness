@@ -71,8 +71,19 @@ A commit after the review needs a new `/review-gate`.
 
 ```bash
 git push -u origin <branch>
-gh pr create ...
 ```
+
+Write the PR body (shape below) to `.git/pr-body.md` with the **Write tool**,
+not with a shell heredoc. Then open the PR as its own command, from the repo
+folder, on the branch itself:
+
+```bash
+gh pr create --base <base> --title "<type>: <what changed>" --body-file .git/pr-body.md
+```
+
+The hook is strict: a command that has `cd`, a commit, `--head`/`-R`, or the
+words `gh pr create` inside its text is blocked. So keep the body in the file,
+and keep the title free of those words.
 
 PR body:
 

@@ -12,6 +12,7 @@ chk "title with & and | kept"      "grep -q 'title: MMV-1 Login & signup | v2' $
 chk "url with & kept"              "grep -q 'resource: https://x/issue?a=1&b=2' $D/index.md"
 bash $H/new-change.sh MMV-2 inj "x|w $R/pwned
 #" >/dev/null 2>&1
+chk "injection title: change made"  "[ -f openspec/changes/mmv-2-inj/index.md ]"
 chk "sed injection writes nothing" "[ ! -e '$R/pwned' ] && ! ls $R/pwned* >/dev/null 2>&1"
 chk "bad capability refused"       "! bash $H/new-change.sh MMV-3 cap t u ../../x >/dev/null 2>&1"
 
@@ -35,5 +36,8 @@ sed -i '' 's/stage: intent/stage: measure/' $D/index.md
 find $D -name '*.md' -exec sed -i '' -E 's/\{\{[^}]*\}\}/filled text for the login capability here/g' {} +
 openspec archive mmv-1-login --yes >/dev/null 2>&1
 chk "next-step finds archived"     "bash $H/next-step.sh $D | grep -q 'STAGE: archived'"
-chk "next-step done = measure only" "grep -q 'done)      echo \"NEXT: Step 7 Measure — after merge + deploy + N days, run /measure \$DIR; set stage: measure\"' $H/next-step.sh"
+D3=openspec/changes/mmv-6-done; bash $H/new-change.sh MMV-6 done "Done" >/dev/null 2>&1; sed -i '' 's/stage: intent/stage: done/' $D3/index.md
+chk "next-step done = measure, no archive" "bash $H/next-step.sh $D3 | grep -q 'NEXT: Step 7 Measure' && ! bash $H/next-step.sh $D3 | grep -q 'NEXT:.*archive'"
+mkdir -p 'sp ace' && cp -R $D2 'sp ace/'
+chk "spec path with a space"        "! NO_VALIDATE=1 bash $H/ready-check.sh 'sp ace/mmv-4-pay' 2>&1 | grep -q 'No such file'"
 echo; echo "passed=$PASS failed=$FAIL"; [ "$FAIL" = 0 ]

@@ -199,7 +199,10 @@ export function createApp({ duelsDir, launcher, wayfinder, token = process.env.D
       // desktop UI (loopback, trusted) calls this to render the Connect-phone modal.
       if (p === '/connect') {
         const u = lanUrl(req.socket.localPort, token || '');
-        return send(res, 200, JSON.stringify({ url: u, svg: qrSvg(u) }));
+        // bound to loopback only (the default): a phone cannot reach the LAN URL
+        const bound = req.socket.server?.address?.()?.address || '';
+        const local = bound === '127.0.0.1' || bound === '::1';
+        return send(res, 200, JSON.stringify({ url: u, svg: qrSvg(u), local }));
       }
       // Voice input: POST a raw audio blob → transcript. Handled here (before the
       // JSON body block) so the audio bytes never hit the JSON parser. Degrades to
@@ -448,7 +451,7 @@ const isMain = (() => {
 if (isMain) {
   const port = Number(process.env.PORT || 4321);
   const DUELS = process.env.DUELS_DIR || join(homedir(), '.claude', 'duels');
-  // Auto-token by default so phone-connect just works; loopback is trusted, so
+  // Auto-token by default, so phone-connect works once DUEL_BIND=0.0.0.0; loopback is trusted, so
   // this never gets in the desktop browser's way. Localhost-only by default;
   // DUEL_BIND=0.0.0.0 opens it to the LAN so a phone can reach it.
   const token = resolveToken(DUELS);

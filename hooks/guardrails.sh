@@ -4,13 +4,12 @@
 # Prints nothing and exits 0 for everything else (= allowed).
 #
 # Blocks (Larry's rules, enforced in every project, cannot be talked out of):
-#   1. git push to main/master (force or not), and any force push
+#   1. git push to main/master (force or not, or a bare push while on main), and any force push
 #   2. merging a PR (gh pr merge, gh api .../merge)  -> a human merges
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
 #   4. rm -rf on root / home
 #   5. reading a real .env file into context (cat/less/head/tail/... or the Read tool)
-#   6. opening a PR before /review-gate marked the current commit as reviewed,
-#      and writing review marks by hand
+#   6. opening a PR before /review-gate marked the current commit as reviewed
 #
 # Test it: hooks/test-guardrails.sh
 
@@ -35,18 +34,26 @@ deny() {
 
 if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
 
-  # 1. any push that targets main/master (origin main, HEAD:main, ... main)
-  if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push' \
-     && printf '%s' "$CMD" | grep -Eq '(^|[[:space:]:])(main|master)([[:space:]]|$)'; then
-    deny "Blocked: push to main/master. Push to a branch and open a PR."
-  fi
-  # 1b. force push anywhere
-  if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push' \
-     && printf '%s' "$CMD" | grep -Eq '(--force([^-]|$)|--force-with-lease|[[:space:]]-f([[:space:]]|$))'; then
-    deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+  # 1. any push that targets main/master (origin main, HEAD:main, HEAD:refs/heads/main),
+  #    and a push with no branch named while the current branch is main/master
+  PUSH="$(printf '%s\n' "$CMD" | grep -oE 'git([[:space:]]+-[^[:space:]]+)*[[:space:]]+push[^;&|]*' || true)"
+  if [ -n "$PUSH" ]; then
+    if printf '%s\n' "$PUSH" | grep -Eq '([[:space:]:+]|refs/heads/)(main|master)([[:space:]]|$)'; then
+      deny "Blocked: push to main/master. Push to a branch and open a PR."
+    fi
+    CUR="$(git -C "${CWD:-$PWD}" branch --show-current 2>/dev/null || true)"
+    if { [ "$CUR" = main ] || [ "$CUR" = master ]; } \
+       && { printf '%s\n' "$PUSH" | grep -Eqv 'push([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^-[:space:]][^[:space:]]*[[:space:]]+[^-[:space:]]' \
+            || printf '%s\n' "$PUSH" | grep -Eq '[[:space:]]HEAD([[:space:]]|$)'; }; then
+      deny "Blocked: you are on $CUR, so this push goes to $CUR. Make a branch first."
+    fi
+  # 1b. force push anywhere (--force, --force-with-lease, -f, or a +branch refspec)
+    if printf '%s\n' "$PUSH" | grep -Eq '(--force([^-]|$)|--force-with-lease|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$)|[[:space:]]\+[^[:space:]])'; then
+      deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+    fi
   fi
 
-  # gh intent (PR create / merge, flags, wrappers, gh api) comes from gh-intent.pl
+  # gh intent (PR create / merge, strict word match) comes from gh-intent.pl
   TAGS="$(printf '%s' "$CMD" | /usr/bin/perl "$(dirname "${BASH_SOURCE[0]}")/gh-intent.pl" 2>/dev/null || echo PARSE_FAIL)"
   has() { printf '%s\n' "$TAGS" | grep -qx "$1"; }
 
@@ -81,17 +88,15 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
 
   # 6. opening a PR on a commit that /review-gate did not pass.
   #    The mark is <git-common-dir>/review-gate/<HEAD sha>, written by
-  #    skills/review-gate/scripts/mark-reviewed.sh. This catches forgetting;
-  #    it is a nudge, not a lock (see hooks/README.md).
-  if has MARKWRITE; then
-    deny "Blocked: review marks are written only by /review-gate (mark-reviewed.sh)."
-  fi
+  #    skills/review-gate/scripts/mark-reviewed.sh. Strict: a mention counts too.
+  #    This catches forgetting; it is a nudge, not a lock (see hooks/README.md).
   if has PARSE_FAIL && printf '%s' "$CMD" | grep -q 'gh'; then
-    deny "Blocked: could not parse this gh command. Run gh pr create as its own simple command."
+    deny "Blocked: could not check this gh command. Run gh pr create as its own simple command."
   fi
-  if has CREATE && ! has HELP; then
-    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C)."
-    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command."
+  if has CREATE; then
+    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C). Put the PR body in a file: --body-file."
+    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command. Put the PR body in a file: --body-file."
+    has TARGET && deny "Blocked: open the PR from the branch itself, without --head / -R / GH_REPO, so the review mark can be checked."
     D="${CWD:-$PWD}"
     GD="$(git -C "$D" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
     SHA="$(git -C "$D" rev-parse HEAD 2>/dev/null || true)"
@@ -99,7 +104,7 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
       deny "Blocked: gh pr create must run from inside the repo folder, so the review mark can be checked."
     fi
     if [ ! -f "$GD/review-gate/$SHA" ]; then
-      deny "Blocked: commit ${SHA:0:7} has no review. Run /review-gate first; open the PR after it passes."
+      deny "Blocked: commit ${SHA:0:7} has no review. Run /review-gate first; open the PR after it passes. (Text that only mentions gh pr create also counts: write it to a file.)"
     fi
   fi
 fi

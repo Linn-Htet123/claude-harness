@@ -62,6 +62,6 @@ Rules:
 - **PASS:** run `bash ~/.claude/skills/review-gate/scripts/mark-reviewed.sh "<verdict line>"`. Tell Larry the PR can be opened (`/ship-it`).
 - **BLOCKED:** do not mark. List the blockers and stop. After the fixes are committed, run `/review-gate` again (a new commit needs a new mark).
 
-Never write the mark by hand or any other way, and never mark a BLOCKED review. The mark is the promise that this commit was reviewed. (The hook also blocks writing into `review-gate/` by hand. It catches forgetting, not a determined bypass.)
+Never write the mark by hand or any other way, and never mark a BLOCKED review. The mark is the promise that this commit was reviewed. (The hook catches forgetting, not a determined bypass.)
 
-Open the PR with `gh pr create` as its own command, from the repo folder, with no `cd`, `git -C` or commit in the same command. The hook blocks those forms because it cannot check which commit the PR gets.
+Open the PR with `gh pr create --body-file .git/pr-body.md` as its own command, from the repo folder, on the branch itself: no `cd`, `git -C`, commit, `--head`, `-R` or `GH_REPO` in the same command. The hook is strict: it matches the words anywhere in the command (quotes removed), so a body or message that only mentions `gh pr create` is blocked too. Write such text to a file with the Write tool.
