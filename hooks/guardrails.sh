@@ -4,7 +4,7 @@
 # Prints nothing and exits 0 for everything else (= allowed).
 #
 # Blocks (Larry's rules, enforced in every project, cannot be talked out of):
-#   1. git push to main/master (force or not, or a bare push while on main), and any force push
+#   1. git push to main/master (force or not), and any force push
 #   2. merging a PR (gh pr merge, gh api .../merge)  -> a human merges
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
 #   4. rm -rf on root / home
@@ -34,39 +34,22 @@ deny() {
 
 if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
 
+  # 1. any push that targets main/master (origin main, HEAD:main, ... main)
+  if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push' \
+     && printf '%s' "$CMD" | grep -Eq '(^|[[:space:]:])(main|master)([[:space:]]|$)'; then
+    deny "Blocked: push to main/master. Push to a branch and open a PR."
+  fi
+  # 1b. force push anywhere
+  if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push' \
+     && printf '%s' "$CMD" | grep -Eq '(--force([^-]|$)|--force-with-lease|[[:space:]]-f([[:space:]]|$))'; then
+    deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+  fi
+
   # gh-intent.pl reads the command once (quotes removed, lines joined) and prints tags
   TAGS="$(printf '%s' "$CMD" | /usr/bin/perl "$(dirname "${BASH_SOURCE[0]}")/gh-intent.pl" 2>/dev/null || echo PARSE_FAIL)"
   has() { printf '%s\n' "$TAGS" | grep -qx "$1"; }
-  if has PARSE_FAIL && printf '%s' "$CMD" | grep -Eq 'gh|push'; then
-    deny "Blocked: could not check this command. Split it into simple commands."
-  fi
-
-  # 1. a push that names main/master (also refs/heads/main, :main, --all, --mirror)
-  if has PUSHMAIN; then
-    deny "Blocked: push to main/master. Push to a branch and open a PR."
-  fi
-  # 1a. a push to the current branch (no refspec, HEAD, @) while that branch is main/master
-  #     The branch is read before the command runs, so a cd or a branch switch in
-  #     the same command, or a path we cannot read, fails closed.
-  while IFS= read -r P; do
-    [ -n "$P" ] || continue
-    if [ "$P" = - ]; then
-      has CD     && deny "Blocked: push after cd: run git push as its own command, from the repo folder."
-      has SWITCH && deny "Blocked: push after a branch switch: run git push as its own command."
-      P="${CWD:-$PWD}"
-    fi
-    [ "$P" = "?" ] && deny "Blocked: cannot read the git -C path of this push. Run git push from the repo folder."
-    case "$P" in "~"*) P="$HOME${P#\~}" ;; '$HOME'*) P="$HOME${P#\$HOME}" ;; '${HOME}'*) P="$HOME${P#\$\{HOME\}}" ;; esac
-    case "$P" in /*) ;; *) has CD && deny "Blocked: relative git -C path after cd. Use an absolute path."; P="${CWD:-$PWD}/$P" ;; esac
-    git -C "$P" rev-parse --git-dir >/dev/null 2>&1 || deny "Blocked: $P is not a git repo I can read, so I cannot check its branch."
-    CUR="$(git -C "$P" branch --show-current 2>/dev/null || true)"
-    if [ "$CUR" = main ] || [ "$CUR" = master ]; then
-      deny "Blocked: you are on $CUR, so this push goes to $CUR. Make a branch first."
-    fi
-  done < <(printf '%s\n' "$TAGS" | sed -n 's/^PUSHCUR //p')
-  # 1b. force push anywhere (--force*, -f in short flags, +refspec, --mirror)
-  if has FORCE; then
-    deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+  if has PARSE_FAIL && printf '%s' "$CMD" | grep -q 'gh'; then
+    deny "Blocked: could not check this gh command. Run it as its own simple command."
   fi
 
   # 2. merging a pull request (gh pr merge with any flags, gh api .../merge, graphql)

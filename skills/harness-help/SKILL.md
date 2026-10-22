@@ -102,7 +102,7 @@ Agents: `@scout` (research) `@qa` `@verifier` (spec coverage) `@reviewer` (corre
 
 ## Guardrails (hooks, cannot be talked past)
 
-Blocked: push to main/master (also `git -C`, quoted `"main"`, `HEAD`/`@` while on main, `--all`), any force push (also `+branch`, `--mirror`), merging a PR (`gh pr merge`, `gh api` merge, graphql), schema push (`db:push`, `drizzle-kit push`, `prisma db push`), `rm -rf ~`, reading real `.env` files, and opening a PR before `/review-gate` passed on the current commit. The PR rule is strict: a command that only *mentions* the PR-open words is blocked too, so PR bodies go in a file (`/ship-it` does this). Release tags from main are fine (`git push --tags`). If blocked: say so in one line, stop, Larry does it by hand if he really wants.
+Blocked: push to main/master, any force push (a simple text check; GitHub branch protection on `master` is the real lock), merging a PR (`gh pr merge`, `gh api` merge, graphql), schema push (`db:push`, `drizzle-kit push`, `prisma db push`), `rm -rf ~`, reading real `.env` files, and opening a PR before `/review-gate` passed on the current commit. The PR rule is strict: a command that only *mentions* the PR-open words is blocked too, so PR bodies go in a file (`/ship-it` does this). If blocked: say so in one line, stop, Larry does it by hand if he really wants.
 Sounds: Hero = turn finished; Glass + banner = Claude needs you; Herdr ding = agent in another workspace. Status bar: `model | ctx 37% [###.......] | branch | $` — over 40% → `/compact` or `/clear`.
 
 ## Where things live

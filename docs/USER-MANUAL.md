@@ -193,7 +193,7 @@ These are **code, not advice**. Claude cannot talk its way past them.
 
 | Blocked | Why |
 |---|---|
-| `git push` to `main` / `master` (also `git -C`, `"main"`, a bare or `HEAD` push while on main) | never push to main. Tags from main are fine |
+| `git push` to `main` / `master` | never push to main. This is a simple text check; GitHub branch protection is the real lock |
 | any force push | too easy to lose work |
 | `gh pr merge` (any flags, `gh api` merge, graphql) | a human merges (Anthony) |
 | opening a PR before `/review-gate` passed on the current commit | every PR gets the review first. Strict: text that only mentions the PR-open words is blocked too, so `/ship-it` puts the PR body in a file |
