@@ -199,9 +199,8 @@ export function createApp({ duelsDir, launcher, wayfinder, token = process.env.D
       // desktop UI (loopback, trusted) calls this to render the Connect-phone modal.
       if (p === '/connect') {
         const u = lanUrl(req.socket.localPort, token || '');
-        // bound to loopback only (the default): a phone cannot reach the LAN URL
-        const bound = req.socket.server?.address?.()?.address || '';
-        const local = bound === '127.0.0.1' || bound === '::1';
+        // local = bound to loopback with no Tailscale HTTPS proxy: a phone cannot reach it
+        const local = !process.env.DUEL_HTTPS_HOST && ['127.0.0.1', '::1'].includes(req.socket.server?.address?.()?.address);
         return send(res, 200, JSON.stringify({ url: u, svg: qrSvg(u), local }));
       }
       // Voice input: POST a raw audio blob → transcript. Handled here (before the

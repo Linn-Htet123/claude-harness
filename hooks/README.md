@@ -13,6 +13,8 @@ Wired in `~/.claude/settings.json` (backup in `~/.claude/backups/`).
 
 Rule 6 stops Claude from forgetting `/review-gate`. The mark is a file in `.git/review-gate/`, so an agent that really wants to skip review can still fake it (for example with the Write tool, which this hook does not watch). The human merge is the real lock.
 
+The `duel` viewer's "open PR" button runs `gh` itself, so this hook never sees it. Run `/review-gate` on the `duel/<slug>` branch before you press it. Duel PRs target `main`; set `DUEL_BASE=dev` for MMV.
+
 ## Why hooks
 
 A rule in `CLAUDE.md` is **advice**. A hook is **code that runs before the action** and cannot be talked out of.

@@ -34,28 +34,31 @@ deny() {
 
 if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
 
-  # 1. any push that targets main/master (origin main, HEAD:main, HEAD:refs/heads/main),
-  #    and a push with no branch named while the current branch is main/master
-  PUSH="$(printf '%s\n' "$CMD" | grep -oE 'git([[:space:]]+-[^[:space:]]+)*[[:space:]]+push[^;&|]*' || true)"
-  if [ -n "$PUSH" ]; then
-    if printf '%s\n' "$PUSH" | grep -Eq '([[:space:]:+]|refs/heads/)(main|master)([[:space:]]|$)'; then
-      deny "Blocked: push to main/master. Push to a branch and open a PR."
-    fi
-    CUR="$(git -C "${CWD:-$PWD}" branch --show-current 2>/dev/null || true)"
-    if { [ "$CUR" = main ] || [ "$CUR" = master ]; } \
-       && { printf '%s\n' "$PUSH" | grep -Eqv 'push([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^-[:space:]][^[:space:]]*[[:space:]]+[^-[:space:]]' \
-            || printf '%s\n' "$PUSH" | grep -Eq '[[:space:]]HEAD([[:space:]]|$)'; }; then
-      deny "Blocked: you are on $CUR, so this push goes to $CUR. Make a branch first."
-    fi
-  # 1b. force push anywhere (--force, --force-with-lease, -f, or a +branch refspec)
-    if printf '%s\n' "$PUSH" | grep -Eq '(--force([^-]|$)|--force-with-lease|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$)|[[:space:]]\+[^[:space:]])'; then
-      deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
-    fi
-  fi
-
-  # gh intent (PR create / merge, strict word match) comes from gh-intent.pl
+  # gh-intent.pl reads the command once (quotes removed, lines joined) and prints tags
   TAGS="$(printf '%s' "$CMD" | /usr/bin/perl "$(dirname "${BASH_SOURCE[0]}")/gh-intent.pl" 2>/dev/null || echo PARSE_FAIL)"
   has() { printf '%s\n' "$TAGS" | grep -qx "$1"; }
+  if has PARSE_FAIL && printf '%s' "$CMD" | grep -Eq 'gh|push'; then
+    deny "Blocked: could not check this command. Split it into simple commands."
+  fi
+
+  # 1. a push that names main/master (also refs/heads/main, :main, --all, --mirror)
+  if has PUSHMAIN; then
+    deny "Blocked: push to main/master. Push to a branch and open a PR."
+  fi
+  # 1a. a push to the current branch (no refspec, HEAD, @) while that branch is main/master
+  for P in $(printf '%s\n' "$TAGS" | sed -n 's/^PUSHCUR //p'); do
+    has CD && [ "$P" = - ] && deny "Blocked: push after cd: run git push as its own command, from the repo folder."
+    [ "$P" = - ] && P="${CWD:-$PWD}"
+    case "$P" in /*) ;; *) P="${CWD:-$PWD}/$P" ;; esac
+    CUR="$(git -C "$P" branch --show-current 2>/dev/null || true)"
+    if [ "$CUR" = main ] || [ "$CUR" = master ]; then
+      deny "Blocked: you are on $CUR, so this push goes to $CUR. Make a branch first."
+    fi
+  done
+  # 1b. force push anywhere (--force*, -f in short flags, +refspec, --mirror)
+  if has FORCE; then
+    deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+  fi
 
   # 2. merging a pull request (gh pr merge with any flags, gh api .../merge, graphql)
   if has MERGE; then
@@ -90,12 +93,9 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
   #    The mark is <git-common-dir>/review-gate/<HEAD sha>, written by
   #    skills/review-gate/scripts/mark-reviewed.sh. Strict: a mention counts too.
   #    This catches forgetting; it is a nudge, not a lock (see hooks/README.md).
-  if has PARSE_FAIL && printf '%s' "$CMD" | grep -q 'gh'; then
-    deny "Blocked: could not check this gh command. Run gh pr create as its own simple command."
-  fi
   if has CREATE; then
-    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C). Put the PR body in a file: --body-file."
-    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command. Put the PR body in a file: --body-file."
+    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C). If your text only mentions these words, put it in a file (--body-file) or reword it."
+    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command. If your text only mentions these words, put it in a file (--body-file) or reword it."
     has TARGET && deny "Blocked: open the PR from the branch itself, without --head / -R / GH_REPO, so the review mark can be checked."
     D="${CWD:-$PWD}"
     GD="$(git -C "$D" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"

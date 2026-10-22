@@ -15,6 +15,8 @@ bash $H/new-change.sh MMV-2 inj "x|w $R/pwned
 chk "injection title: change made"  "[ -f openspec/changes/mmv-2-inj/index.md ]"
 chk "sed injection writes nothing" "[ ! -e '$R/pwned' ] && ! ls $R/pwned* >/dev/null 2>&1"
 chk "bad capability refused"       "! bash $H/new-change.sh MMV-3 cap t u ../../x >/dev/null 2>&1"
+chk "newline capability refused"   "! bash $H/new-change.sh MMV-8 nl t u 'x
+/../../../tmp/e' >/dev/null 2>&1"
 
 # ready-check: a 'ledger' happy-only requirement must FAIL
 D2=openspec/changes/mmv-4-pay; bash $H/new-change.sh MMV-4 pay "Pay" >/dev/null 2>&1
@@ -22,6 +24,12 @@ find $D2 -name '*.md' -exec sed -i '' -E 's/\{\{[^}]*\}\}/filled text for the pa
 awk '/^#### Scenario: S2 edge/{skip=1} /^## |^### /{if(skip&&!/^#### /)skip=0} !skip' $D2/specs/pay/spec.md > t && mv t $D2/specs/pay/spec.md
 chk "ledger-only spec has no edge"  "! grep -q 'S2 edge' $D2/specs/pay/spec.md"
 chk "ready-check FAILS without edge" "! NO_VALIDATE=1 bash $H/ready-check.sh $D2 >/dev/null 2>&1"
+
+# ready-check: a filled change with every box ticked is still READY
+D4=openspec/changes/mmv-9-tick; bash $H/new-change.sh MMV-9 tick "Tick" >/dev/null 2>&1
+find $D4 -name '*.md' -exec sed -i '' -E 's/\{\{[^}]*\}\}/filled text for the tick capability here/g' {} +
+sed -i '' 's/^- \[ \]/- [x]/' $D4/tasks.md
+chk "ticked boxes still READY"     "grep -q '^- \\[x\\] 1.1' $D4/tasks.md && NO_VALIDATE=1 bash $H/ready-check.sh $D4 >/dev/null 2>&1"
 
 # ready-check: old docs/changes layout can pass
 O=docs/changes/MMV-5-old; mkdir -p $O

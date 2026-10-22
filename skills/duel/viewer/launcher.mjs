@@ -9,6 +9,8 @@ import { applyScore } from '../scripts/score.mjs';
 import * as greptile from '../scripts/greptile.mjs';
 
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+// The branch duel PRs target and diff against. MMV uses dev: DUEL_BASE=dev.
+const BASE = process.env.DUEL_BASE || 'main';
 
 // Phases where a live session may hold EDIT access: the duel has a worktree AND
 // it's human-gated/idle, never mid-autonomous-round — so a session can't clobber
@@ -185,7 +187,7 @@ export function createLauncher({
     // slicing) — count insertions+deletions vs the branch base.
     let loc = 0;
     try {
-      const ns = execFileSync('git', ['-C', m.worktree, 'diff', m.base || 'origin/main', '--numstat'], { maxBuffer: 8e6 }).toString();
+      const ns = execFileSync('git', ['-C', m.worktree, 'diff', m.base || `origin/${BASE}`, '--numstat'], { maxBuffer: 8e6 }).toString();
       loc = ns.trim().split('\n').filter(Boolean).reduce((n, l) => { const [a, d] = l.split('\t'); return n + (Number(a) || 0) + (Number(d) || 0); }, 0);
     } catch {}
     const over = loc > buildMaxLoc * 1.5;
@@ -259,7 +261,7 @@ export function createLauncher({
     try { execFileSync('git', ['-C', repo, 'rev-parse', '--git-dir'], { stdio: 'ignore' }); }
     catch { return repo; } // not a git repo
     const wt = `${repo}-research`;
-    try { execFileSync('git', ['-C', repo, 'fetch', 'origin', 'main', '--quiet'], { stdio: 'ignore' }); } catch {}
+    try { execFileSync('git', ['-C', repo, 'fetch', 'origin', BASE, '--quiet'], { stdio: 'ignore' }); } catch {}
     try {
       if (!existsSync(wt)) execFileSync('git', ['-C', repo, 'worktree', 'add', '--detach', wt, 'origin/main'], { stdio: 'ignore' });
       else execFileSync('git', ['-C', wt, 'checkout', '--detach', '--force', 'origin/main'], { stdio: 'ignore' });
@@ -279,8 +281,8 @@ export function createLauncher({
     // duel branch, and the PR diff would be wrong. Fetch first for freshness; fall back to a
     // local main, then HEAD, if origin/main isn't available (offline / fresh repo / tests).
     const verify = (ref) => { try { execFileSync('git', ['-C', repo, 'rev-parse', '--verify', '--quiet', ref], { stdio: 'ignore' }); return true; } catch { return false; } };
-    try { execFileSync('git', ['-C', repo, 'fetch', 'origin', 'main', '--quiet'], { stdio: 'ignore' }); } catch {}
-    const baseRef = verify('origin/main') ? 'origin/main' : verify('main') ? 'main' : 'HEAD';
+    try { execFileSync('git', ['-C', repo, 'fetch', 'origin', BASE, '--quiet'], { stdio: 'ignore' }); } catch {}
+    const baseRef = verify(`origin/${BASE}`) ? `origin/${BASE}` : verify(BASE) ? BASE : 'HEAD';
     // PIN the base to the SHA at creation time — NOT the ref name. origin/main moves when
     // something merges during a (possibly hour-long) build; diffing against the moved ref shows
     // phantom deletions of files added to main meanwhile and miscounts the slice's LOC. The PR
@@ -371,7 +373,7 @@ export function createLauncher({
       await gitRun(['-C', m.worktree, 'push', '-u', 'origin', m.branch]);
       const title = `duel: ${String(m.task).slice(0, 90)}`;
       const body = `Built by the duel arena from the resolved plan of \`${slug}\` (see draft-resolution.md / the duel transcript). Greptile-reviewed via the arena loop.`;
-      const out = await ghRun(['pr', 'create', '--repo', repo, '--head', m.branch, '--base', 'main', '--title', title, '--body', body], m.worktree);
+      const out = await ghRun(['pr', 'create', '--repo', repo, '--head', m.branch, '--base', BASE, '--title', title, '--body', body], m.worktree);
       const prUrl = (out.match(/https?:\/\/\S+\/pull\/\d+/) || [String(out).trim()])[0];
       const pr = (prUrl.match(/\/pull\/(\d+)/) || [])[1] || null;
       patchMeta(slug, { pr, prUrl, ghRepo: repo });

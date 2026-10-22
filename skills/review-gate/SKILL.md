@@ -64,4 +64,4 @@ Rules:
 
 Never write the mark by hand or any other way, and never mark a BLOCKED review. The mark is the promise that this commit was reviewed. (The hook catches forgetting, not a determined bypass.)
 
-Open the PR with `gh pr create --body-file .git/pr-body.md` as its own command, from the repo folder, on the branch itself: no `cd`, `git -C`, commit, `--head`, `-R` or `GH_REPO` in the same command. The hook is strict: it matches the words anywhere in the command (quotes removed), so a body or message that only mentions `gh pr create` is blocked too. Write such text to a file with the Write tool.
+Open the PR with `/ship-it` (it has the exact command the hook allows).

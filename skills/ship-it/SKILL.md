@@ -73,13 +73,23 @@ A commit after the review needs a new `/review-gate`.
 git push -u origin <branch>
 ```
 
-Write the PR body (shape below) to `.git/pr-body.md` with the **Write tool**,
-not with a shell heredoc. Then open the PR as its own command, from the repo
-folder, on the branch itself:
+Find the real git folder (in a worktree `.git` is a file, not a folder):
 
 ```bash
-gh pr create --base <base> --title "<type>: <what changed>" --body-file .git/pr-body.md
+git rev-parse --absolute-git-dir
 ```
+
+Write the PR body (shape below) to `<that folder>/pr-body.md` with the **Write
+tool**, not with a shell heredoc. Put the `/review-gate` verdict line under
+**Verification**. Then open the PR as its own command, from the repo folder,
+on the branch itself, with the absolute path:
+
+```bash
+gh pr create --base <base> --title "<type>: <what changed>" --body-file <that folder>/pr-body.md
+```
+
+After the PR is open, delete `<that folder>/pr-body.md`, so the next PR never
+reuses an old body.
 
 The hook is strict: a command that has `cd`, a commit, `--head`/`-R`, or the
 words `gh pr create` inside its text is blocked. So keep the body in the file,
@@ -120,9 +130,3 @@ Merging is a human decision. That is not a formality - it is the one control
 that catches everything the machine missed. Every large engineering org that
 has published on this keeps the same rule: the agent opens the PR, a person
 merges it.
-
-## Then
-
-`/review-gate` already ran `@verifier`, the defect review, ponytail and (when
-needed) `@security-reviewer`. Put its verdict line in the PR body under
-**Verification**, then ping a person.

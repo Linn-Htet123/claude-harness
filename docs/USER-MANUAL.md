@@ -193,9 +193,10 @@ These are **code, not advice**. Claude cannot talk its way past them.
 
 | Blocked | Why |
 |---|---|
-| `git push` to `main` / `master` | never push to main |
+| `git push` to `main` / `master` (also `git -C`, `"main"`, a bare or `HEAD` push while on main) | never push to main. Tags from main are fine |
 | any force push | too easy to lose work |
-| `gh pr merge` | a human merges (Anthony) |
+| `gh pr merge` (any flags, `gh api` merge, graphql) | a human merges (Anthony) |
+| opening a PR before `/review-gate` passed on the current commit | every PR gets the review first. Strict: text that only mentions the PR-open words is blocked too, so `/ship-it` puts the PR body in a file |
 | `db:push` / `drizzle-kit push` / `prisma db push` | migrations only |
 | `rm -rf ~` or `/` | obvious |
 | `cat .env` or reading `.env` files | secrets must not enter Claude's context |

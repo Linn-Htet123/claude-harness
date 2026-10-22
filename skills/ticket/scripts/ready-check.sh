@@ -51,7 +51,7 @@ if [ "$OLD" = 1 ] && [ -f "$TASKS" ]; then
   grep -Eq '^\| T[0-9]+ ' "$TASKS" && ok "tickets.md has at least one ticket row" || bad "tickets.md has no '| T1 ' row"
 elif [ -f "$DIR/tasks.md" ]; then
   grep -Eq '^## [0-9]+\. T[0-9]+ .*blocked by:' "$DIR/tasks.md" && ok "tasks.md has a slice heading with 'blocked by:'" || bad "tasks.md needs '## 1. T1 <title> (blocked by: none; scenarios: S1,S2; ...)'"
-  grep -Eq '^- \[ ?\] [0-9]+\.[0-9]+ ' "$DIR/tasks.md" && ok "tasks.md has checkbox tasks (- [ ] 1.1 ...)" || bad "tasks.md has no '- [ ] 1.1' task"
+  grep -Eq '^- \[[ xX]?\] [0-9]+\.[0-9]+ ' "$DIR/tasks.md" && ok "tasks.md has checkbox tasks (- [ ] 1.1 ...)" || bad "tasks.md has no '- [ ] 1.1' task"
 fi
 
 # OpenSpec's own check (structure of proposal + spec deltas)
