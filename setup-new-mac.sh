@@ -15,10 +15,13 @@ warn() { printf '  \033[33m! %s\033[0m\n' "$1"; }
 
 echo "==> 1. tools (brew)"
 command -v brew >/dev/null || { echo "Homebrew missing: https://brew.sh  — install it, then re-run."; exit 1; }
-for pkg in jq gh herdr; do
+for pkg in jq gh herdr node; do
   if command -v "$pkg" >/dev/null; then skip "$pkg already installed"; else brew install "$pkg" >/dev/null 2>&1 && ok "installed $pkg" || warn "could not install $pkg"; fi
 done
 command -v claude >/dev/null || warn "claude CLI not found. Install Claude Code first: https://code.claude.com"
+# OpenSpec (the /ticket spec files) and Codex (the other side of /duel)
+if command -v openspec >/dev/null; then skip "openspec already installed"; else npm i -g @fission-ai/openspec >/dev/null 2>&1 && ok "installed openspec" || warn "could not install openspec (needs node: brew install node)"; fi
+if command -v codex >/dev/null; then skip "codex already installed"; else brew install --cask codex >/dev/null 2>&1 && ok "installed codex (run: codex login)" || warn "could not install codex"; fi
 
 echo "==> 2. skills / agents / commands -> ~/.claude (symlinks)"
 "$H/install.sh" >/dev/null && ok "install.sh done"
@@ -58,6 +61,10 @@ EOF
 
 echo "==> 5. global CLAUDE.md"
 if [ -s "$HOME/.claude/CLAUDE.md" ]; then skip "~/.claude/CLAUDE.md exists — not touched (compare with templates/global-CLAUDE.md)"; else cp "$H/templates/global-CLAUDE.md" "$HOME/.claude/CLAUDE.md"; ok "~/.claude/CLAUDE.md installed"; fi
+mkdir -p "$HOME/.claude/shared/journal"
+for f in agent-changelog.md journal/TEMPLATE.md; do
+  if [ -e "$HOME/.claude/shared/$f" ]; then skip "shared/$f exists"; else cp "$H/templates/shared/$f" "$HOME/.claude/shared/$f"; ok "shared/$f installed"; fi
+done
 
 echo "==> 5b. Claude memory notes (what past sessions learned)"
 MEMDIR="$HOME/.claude/projects/-Users-tharlinhtet-my/memory"

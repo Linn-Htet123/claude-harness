@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Wayfinder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/duel.css"></head>
+<body class="mappage">
+<header>
+  <div class="hud-top">
+    <h1 id="dest">⚔️ Wayfinder</h1>
+    <div class="hud-top-right">
+      <select id="mapsel" title="Map"></select>
+      <button id="connect" class="icon-btn" title="Open on your phone">📱</button>
+      <button id="addmaptoggle" class="icon-btn" title="Add a map">＋</button>
+    </div>
+  </div>
+  <div id="setup" hidden>
+    <input id="mapurl" placeholder="paste a wayfinder map issue URL (Linear or GitHub)…">
+    <button id="addmap" class="btn">Add map</button>
+  </div>
+  <div class="hud-status">
+    <div class="progress" id="progress" hidden><div class="progress-bar"><span id="progress-fill"></span></div><span id="progress-label"></span></div>
+    <span class="score" id="tally"></span>
+  </div>
+  <div class="hud-actions">
+    <button id="sync" class="btn">⟲ Sync</button>
+    <button id="next" class="btn btn-primary">⚔️ Next battle</button>
+    <button id="battleall" class="btn">⚔️ Battle all</button>
+  </div>
+</header>
+<main>
+  <div id="hexmap"></div>
+  <div id="legend" hidden>
+    <span class="lg"><i class="sw sw-forest"></i>research</span>
+    <span class="lg"><i class="sw sw-village"></i>grill/proto</span>
+    <span class="lg"><i class="sw sw-quarry"></i>task</span>
+    <span class="lg"><i class="sw sw-frontier"></i>frontier</span>
+    <span class="lg"><i class="sw sw-live"></i>contested</span>
+    <span class="lg"><i class="sw sw-claude"></i>claude</span>
+    <span class="lg"><i class="sw sw-codex"></i>codex</span>
+    <span class="lg"><i class="sw sw-settled"></i>done</span>
+  </div>
+  <div id="panel"></div>
+</main>
+<div id="overlay" hidden><div class="spinner"></div><p id="overlay-text">Working…</p><small id="overlay-sub"></small></div>
+<div id="qrmodal" hidden>
+  <div class="qr-card" role="dialog" aria-label="Open on your phone">
+    <button class="qr-close" id="qrclose" title="Close" aria-label="Close">✕</button>
+    <h2>📱 Open on your phone</h2>
+    <p>Scan with your camera — you must be on the same Wi‑Fi / Tailscale.</p>
+    <div class="qr-code" id="qrcode"></div>
+    <div class="qr-url"><code id="qrurl"></code><button id="qrcopy" class="btn">Copy</button></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<script type="module" src="/static/map.js"></script>
+</body></html>

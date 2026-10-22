@@ -1,19 +1,5 @@
----
-type: Spec
-title: {{ID}} spec
-status: draft
-resource: {{LINEAR_URL}}
----
-# Spec — {{ID}} {{TITLE}}
-
 ## Purpose
-{{One sentence: what is true when this is done.}}
-
-## Out of scope
-- {{the most useful list in this file}}
-
-## User stories
-1. As a {{who}}, I want {{what}}, so that {{why}}.
+{{One or two sentences (50+ characters): what this capability is for. Delete this section when you modify an existing capability.}}
 
 ## ADDED Requirements
 
@@ -29,7 +15,3 @@ The system SHALL {{behaviour in one sentence}}.
 - **GIVEN** {{state}}
 - **WHEN** {{action}}
 - **THEN** {{what the user sees when it fails safely}}
-
-## How we prove it
-- Every scenario id (S1, S2, ...) appears in a test title.
-- Edge scenarios assert the failure behaviour (error text, disabled button, no navigation, 4xx).

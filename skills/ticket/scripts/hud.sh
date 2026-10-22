@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # HUD v2 — dashboard for a Herdr/tmux pane next to `claude`.
 #
-#   hud [docs/changes/<ID>-<slug>] [--once]
+#   hud [openspec/changes/<name>] [--once]
 #
 # Panels: NOW (what is going on) · LIFECYCLE (the ticket loop) · SUGGESTED NEXT (ranked)
 # Auto-refreshes every 5 s (PR/CI about once a minute).
@@ -37,7 +37,12 @@ title() { printf '%s%s%s%s\n' "$B" "$1" "$2" "$R"; }
 
 # ---------- state ----------
 stage_of() { grep -m1 '^stage:' "$1/index.md" 2>/dev/null | sed 's/stage: *//'; }
-pick_folder() { ls -td "$ROOT"/docs/changes/*/ 2>/dev/null | head -1 | sed 's|/$||'; }
+# change folders: openspec/changes/<name>/ (not archive), plus old docs/changes/<ID>-<slug>/
+change_dirs() { for d in "$ROOT"/openspec/changes/*/ "$ROOT"/docs/changes/*/; do [ -d "$d" ] && [ "$(basename "$d")" != archive ] && echo "${d%/}"; done; }
+# all spec text of one change (OpenSpec: specs/*/spec.md; old layout: spec.md)
+spec_text() { if [ -d "$1/specs" ]; then find "$1/specs" -name spec.md -exec cat {} + 2>/dev/null; else cat "$1/spec.md" 2>/dev/null; fi; }
+spec_file() { { find "$1/specs" -name spec.md; ls "$1/spec.md"; } 2>/dev/null | head -1; }
+pick_folder() { ls -td "$ROOT"/openspec/changes/*/ "$ROOT"/docs/changes/*/ 2>/dev/null | grep -v '/archive/$' | head -1 | sed 's|/$||'; }
 [ -z "$DIR" ] && DIR="$(pick_folder)"
 case "$DIR" in /*) ;; "") ;; *) DIR="$ROOT/$DIR" ;; esac
 [ -n "$DIR" ] && [ ! -d "$DIR" ] && DIR=""
@@ -69,30 +74,35 @@ gather() {
   fi
   # all change folders: "folder|stage"
   CHANGES=""; N_CHANGES=0
-  for d in "$ROOT"/docs/changes/*/; do
-    [ -d "$d" ] || continue; [ -f "$d/index.md" ] || continue
-    CHANGES="$CHANGES$(basename "$d")|$(stage_of "${d%/}")"$'\n'; N_CHANGES=$((N_CHANGES+1))
-  done
+  while IFS= read -r d; do
+    [ -f "$d/index.md" ] || continue
+    CHANGES="$CHANGES$(basename "$d")|$(stage_of "$d")"$'\n'; N_CHANGES=$((N_CHANGES+1))
+  done < <(change_dirs)
   # spec facts for DIR
   STAGE=""; REQ=0; HAPPY=0; EDGE=0; EDGE_MISSING=""; T_DONE=0; T_ALL=0; GATE=""
   if [ -n "$DIR" ]; then
     STAGE="$(stage_of "$DIR")"; [ -z "$STAGE" ] && STAGE="?"
-    if [ -f "$DIR/spec.md" ]; then
-      REQ="$(grep -c '^### Requirement:' "$DIR/spec.md")"
-      HAPPY="$(grep -ci '^#### Scenario:.*happy' "$DIR/spec.md")"
-      EDGE="$(grep -ci '^#### Scenario:.*edge' "$DIR/spec.md")"
+    SPEC_TXT="$(spec_text "$DIR")"
+    if [ -n "$SPEC_TXT" ]; then
+      REQ="$(printf '%s\n' "$SPEC_TXT" | grep -c '^### Requirement:')"
+      HAPPY="$(printf '%s\n' "$SPEC_TXT" | grep -ciE '^#### Scenario: S[0-9]+ happy')"
+      EDGE="$(printf '%s\n' "$SPEC_TXT" | grep -ciE '^#### Scenario: S[0-9]+ edge')"
       if [ "$IS_GIT" = 1 ]; then
-        for sid in $(grep -oiE '^#### Scenario: S[0-9]+ edge' "$DIR/spec.md" | grep -oE 'S[0-9]+'); do
-          git -C "$ROOT" grep -qiE "$sid edge" -- ':!docs' 2>/dev/null || EDGE_MISSING="$EDGE_MISSING $sid"
+        for sid in $(printf '%s\n' "$SPEC_TXT" | grep -oiE '^#### Scenario: S[0-9]+ edge' | grep -oE 'S[0-9]+'); do
+          git -C "$ROOT" grep -qiE "$sid edge" -- ':!docs' ':!openspec' 2>/dev/null || EDGE_MISSING="$EDGE_MISSING $sid"
         done
       fi
     fi
-    if [ -f "$DIR/tickets.md" ]; then
+    if [ -f "$DIR/tasks.md" ]; then
+      T_ALL="$(grep -Ec '^- \[.?\] [0-9]' "$DIR/tasks.md")"
+      T_DONE="$(grep -Eic '^- \[ *x *\] [0-9]' "$DIR/tasks.md")"
+    elif [ -f "$DIR/tickets.md" ]; then
       T_ALL="$(grep -Ec '^\| T[0-9]+ ' "$DIR/tickets.md")"
       T_DONE="$(grep -E '^\| T[0-9]+ ' "$DIR/tickets.md" | grep -ci '| *done *|$')"
     fi
     case "$STAGE" in spec|ready|implement|qa|done)
-      if bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
+      # NO_VALIDATE: skip the ~1 s openspec validate on every refresh; Step 3 runs it in full
+      if NO_VALIDATE=1 bash "$S/ready-check.sh" "$DIR" >/dev/null 2>&1; then GATE="${GRN}READY ✓${R}"; else GATE="${YEL}not ready (g)${R}"; fi ;;
     esac
   fi
   # agents in this Herdr workspace
@@ -125,10 +135,10 @@ suggest() {
   SUG_N=0
   local rel="${DIR#$ROOT/}"
   if [ "$IS_GIT" = 0 ]; then
-    add_sug "This folder is not a git repo. Make it one first." "shell:git init && harness-init $ROOT"
+    add_sug "This folder is not a git repo. Make it one first." "shell:git init && harness-init $(printf '%q' "$ROOT")"
   fi
   if [ ! -s "$ROOT/CLAUDE.md" ]; then
-    add_sug "No CLAUDE.md. Set the repo up, then let Claude learn it." "shell:harness-init $ROOT && claude '/onboard-repo'"
+    add_sug "No CLAUDE.md. Set the repo up, then let Claude learn it." "shell:harness-init $(printf '%q' "$ROOT") && claude '/onboard-repo'"
   fi
   if [ -n "$DIR" ]; then
     local next; next="$(cd "$ROOT" && bash "$S/next-step.sh" "$rel" 2>/dev/null | grep '^NEXT:' | sed 's/^NEXT: *//' | sed 's/ *—.*//' | xargs)"
@@ -228,7 +238,7 @@ loops_menu() {
   printf '  %s3%s PR babysitter    every 10 min: fix red CI, answer reviews\n' "$YEL" "$R"
   printf '  %s4%s QA sweep         run @qa on every change in implement/qa stage\n' "$YEL" "$R"
   printf '  %s5%s Measure sweep    /measure on every change in done stage\n' "$YEL" "$R"
-  printf '  %s6%s Verify branch    @verifier + @reviewer on the current diff, report only\n' "$YEL" "$R"
+  printf '  %s6%s Review gate      /review-gate on this branch (all axes, marks HEAD)\n' "$YEL" "$R"
   printf '  %s7%s Wayfinder        map a big fuzzy idea into decision tickets\n' "$YEL" "$R"
   printf '  %s8%s Onboard repo     read the code, write CLAUDE.md\n' "$YEL" "$R"
   printf '> '; read -r n
@@ -236,9 +246,9 @@ loops_menu() {
     1) if [ -n "$DIR" ]; then run_claude "/ticket $rel"; else printf 'Ticket id, or what you want to do: '; read -r t; [ -n "$t" ] && run_claude "/ticket $t"; fi ;;
     2) printf 'Describe the bug in one line: '; read -r bug; [ -n "$bug" ] && run_claude "/triage-bug $bug — after the cause is found, fix it with /tdd-loop, then /ship-it. Stop after each skill and tell me what you found." ;;
     3) run_claude "/loop 10m Check the open PR for this branch with gh. If CI is red, fix it and push. If there are review comments, answer or apply them. Otherwise say: quiet." ;;
-    4) run_claude "For every folder in docs/changes/ whose index.md has stage implement or qa, dispatch the qa agent with that folder and collect the pass/fail tables into one summary. Report only." ;;
-    5) run_claude "For every folder in docs/changes/ whose index.md has stage done, run /measure on it. Numbers in a table. Say not enough data instead of guessing." ;;
-    6) run_claude "Dispatch @verifier and @reviewer on the current branch diff${DIR:+ against $rel}. Report their findings, ranked. Do not edit anything." ;;
+    4) run_claude "For every change folder in openspec/changes/ (and old docs/changes/) whose index.md has stage implement or qa, dispatch the qa agent with that folder and collect the pass/fail tables into one summary. Report only." ;;
+    5) run_claude "For every change folder in openspec/changes/ (and old docs/changes/) whose index.md has stage done, run /measure on it. Numbers in a table. Say not enough data instead of guessing." ;;
+    6) run_claude "/review-gate" ;;
     7) printf 'Destination in one line: '; read -r idea; [ -n "$idea" ] && run_claude "/wayfinder $idea" ;;
     8) run_claude "/onboard-repo" ;;
   esac
@@ -249,7 +259,7 @@ EDITOR_CMD="${HUD_EDITOR:-}"   # set HUD_EDITOR=cursor in your shell to override
 [ -z "$EDITOR_CMD" ] && { command -v code >/dev/null && EDITOR_CMD="code" || { command -v cursor >/dev/null && EDITOR_CMD="cursor"; }; }
 open_editor() {
   [ -n "$EDITOR_CMD" ] || { LAST="No cursor/code command found. Install the shell command from the editor's command palette."; return 0; }
-  if [ -n "$DIR" ] && [ -f "$DIR/spec.md" ]; then "$EDITOR_CMD" "$ROOT" "$DIR/spec.md" >/dev/null 2>&1 & else "$EDITOR_CMD" "$ROOT" >/dev/null 2>&1 & fi
+  if [ -n "$DIR" ] && [ -n "$(spec_file "$DIR")" ]; then "$EDITOR_CMD" "$ROOT" "$(spec_file "$DIR")" >/dev/null 2>&1 & else "$EDITOR_CMD" "$ROOT" >/dev/null 2>&1 & fi
   LAST="Opened $NAME in $EDITOR_CMD (Source Control tab shows the diff; cmd+shift+v previews .md)"
 }
 show_diff() {
@@ -271,7 +281,7 @@ open_doc() {
   f="$(sed -n "${pick}p" "$list")"; rm -f "$list"
   [ -n "$f" ] || return 0
   if [ -n "$EDITOR_CMD" ]; then "$EDITOR_CMD" "$f" >/dev/null 2>&1 & LAST="Opened ${f#$ROOT/} in $EDITOR_CMD"
-  else run_here_or_pane "less -R '$f'"; fi
+  else run_here_or_pane "less -R $(printf '%q' "$f")"; fi
 }
 
 # ---------- render ----------
@@ -300,7 +310,7 @@ render() {
     printf '  %schanges:%s %s open' "$GRN" "$R" "$N_CHANGES"
     printf '%s' "$CHANGES" | head -4 | while IFS='|' read -r f st; do [ -n "$f" ] && printf '   %s▸%s %s %s(%s)%s' "$D" "$R" "$(trunc "$f" 28)" "$D" "$st" "$R"; done; echo
   else
-    printf '  %schanges:%s none yet %s(docs/changes/ is empty)%s\n' "$GRN" "$R" "$D" "$R"
+    printf '  %schanges:%s none yet %s(openspec/changes/ is empty)%s\n' "$GRN" "$R" "$D" "$R"
   fi
   if [ "$IS_GIT" = 1 ]; then
     printf '  %sgit:%s %s uncommitted · last: %s' "$GRN" "$R" "$DIRTY" "$(trunc "$GLAST" $((w-40)))"
@@ -324,10 +334,10 @@ render() {
     printf '  '; meter "$STAGE"
     printf '  %schange:%s %s   %sstage:%s %s' "$GRN" "$R" "$(basename "$DIR")" "$GRN" "$R" "$STAGE"
     [ -n "$GATE" ] && printf '   %sgate:%s %s' "$GRN" "$R" "$GATE"; echo
-    if [ -f "$DIR/spec.md" ]; then
+    if [ -n "$(spec_file "$DIR")" ]; then
       printf '  %sspec:%s %s req · %s happy · %s edge' "$GRN" "$R" "$REQ" "$HAPPY" "$EDGE"
       [ -n "$EDGE_MISSING" ] && printf ' %s(no test:%s)%s' "$YEL" "$EDGE_MISSING" "$R"
-      [ "$T_ALL" -gt 0 ] && printf '   %stickets:%s %s/%s done' "$GRN" "$R" "$T_DONE" "$T_ALL"; echo
+      [ "$T_ALL" -gt 0 ] && printf '   %stasks:%s %s/%s done' "$GRN" "$R" "$T_DONE" "$T_ALL"; echo
     fi
   fi
   hr
@@ -387,8 +397,8 @@ while :; do
     o) open_doc ;;
     d) show_diff ;;
     t) [ "$TARGET" = pane ] && TARGET=here || { [ "$IN_HERDR" = 1 ] && TARGET=pane || LAST="Not inside Herdr: target stays here"; } ;;
-    c) echo; i=1; for d in "$ROOT"/docs/changes/*/; do [ -d "$d" ] || continue; printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "${d%/}")"; i=$((i+1)); done
-       printf '> '; read -r n; j=1; for d in "$ROOT"/docs/changes/*/; do [ -d "$d" ] || continue; [ "$j" = "$n" ] && DIR="${d%/}"; j=$((j+1)); done ;;
+    c) echo; i=1; while IFS= read -r d; do printf '  %s%d%s %s (%s)\n' "$YEL" "$i" "$R" "$(basename "$d")" "$(stage_of "$d")"; i=$((i+1)); done < <(change_dirs)
+       printf '> '; read -r n; case "$n" in ''|*[!0-9]*) ;; *) d="$(change_dirs | sed -n "${n}p")"; [ -n "$d" ] && DIR="$d" ;; esac ;;
     r) refresh_pr; LAST="Refreshed" ;;
     q) rm -f "$SKILLS_CACHE"; clear; exit 0 ;;
   esac

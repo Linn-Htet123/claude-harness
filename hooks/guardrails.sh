@@ -5,10 +5,11 @@
 #
 # Blocks (Larry's rules, enforced in every project, cannot be talked out of):
 #   1. git push to main/master (force or not), and any force push
-#   2. merging a PR with the gh CLI                -> a human merges
+#   2. merging a PR (gh pr merge, gh api .../merge)  -> a human merges
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
 #   4. rm -rf on root / home
 #   5. reading a real .env file into context (cat/less/head/tail/... or the Read tool)
+#   6. opening a PR before /review-gate marked the current commit as reviewed
 #
 # Test it: hooks/test-guardrails.sh
 
@@ -18,6 +19,7 @@ INPUT="$(cat)"
 TOOL="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')"
 CMD="$(printf '%s' "$INPUT"  | jq -r '.tool_input.command // empty')"
 FILE="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
+CWD="$(printf '%s' "$INPUT"  | jq -r '.cwd // empty')"
 
 deny() {
   jq -n --arg reason "$1" '{
@@ -43,8 +45,15 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
     deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
   fi
 
-  # 2. merging a pull request
-  if printf '%s' "$CMD" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge'; then
+  # gh-intent.pl reads the command once (quotes removed, lines joined) and prints tags
+  TAGS="$(printf '%s' "$CMD" | /usr/bin/perl "$(dirname "${BASH_SOURCE[0]}")/gh-intent.pl" 2>/dev/null || echo PARSE_FAIL)"
+  has() { printf '%s\n' "$TAGS" | grep -qx "$1"; }
+  if has PARSE_FAIL && printf '%s' "$CMD" | grep -q 'gh'; then
+    deny "Blocked: could not check this gh command. Run it as its own simple command."
+  fi
+
+  # 2. merging a pull request (gh pr merge with any flags, gh api .../merge, graphql)
+  if has MERGE; then
     deny "Blocked: merging is a human decision. Post the PR link and stop."
   fi
 
@@ -70,6 +79,25 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
       esac
       deny "Blocked: reading $P puts secrets into context. Use .env.example instead."
     done
+  fi
+
+  # 6. opening a PR on a commit that /review-gate did not pass.
+  #    The mark is <git-common-dir>/review-gate/<HEAD sha>, written by
+  #    skills/review-gate/scripts/mark-reviewed.sh. Strict: a mention counts too.
+  #    This catches forgetting; it is a nudge, not a lock (see hooks/README.md).
+  if has CREATE; then
+    has CD     && deny "Blocked: run gh pr create as its own command, from the repo folder (no cd / git -C). If your text only mentions these words, put it in a file (--body-file) or reword it."
+    has GITMUT && deny "Blocked: commit first, run /review-gate, then run gh pr create as its own command. If your text only mentions these words, put it in a file (--body-file) or reword it."
+    has TARGET && deny "Blocked: open the PR from the branch itself, without --head / -R / GH_REPO, so the review mark can be checked."
+    D="${CWD:-$PWD}"
+    GD="$(git -C "$D" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    SHA="$(git -C "$D" rev-parse HEAD 2>/dev/null || true)"
+    if [ -z "$GD" ] || [ -z "$SHA" ]; then
+      deny "Blocked: gh pr create must run from inside the repo folder, so the review mark can be checked."
+    fi
+    if [ ! -f "$GD/review-gate/$SHA" ]; then
+      deny "Blocked: commit ${SHA:0:7} has no review. Run /review-gate first; open the PR after it passes. (Text that only mentions gh pr create also counts: write it to a file.)"
+    fi
   fi
 fi
 

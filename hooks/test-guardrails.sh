@@ -37,5 +37,57 @@ t "Read .env.local"                  deny  "$(r '/x/.env.local')"
 t "Read .env.example"                allow "$(r '/x/.env.example')"
 t "pnpm test"                        allow "$(b 'pnpm test')"
 t "git push (no target)"             allow "$(b 'git push')"
+
+# 2b + 6. PR merge / create, built with jq so quotes and newlines are exact.
+# U = repo with an unreviewed HEAD, V = repo whose HEAD has the review mark.
+U="$(mktemp -d)"; V="$(mktemp -d)"; N="$(mktemp -d)"; trap 'rm -rf "$U" "$V" "$N"' EXIT
+for r in "$U" "$V"; do git -C "$r" init -q && git -C "$r" -c user.email=t@t -c user.name=t commit -q --allow-empty -m one; done
+(cd "$V" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
+c() { jq -nc --arg d "$1" --arg c "$2" '{tool_name:"Bash",cwd:$d,tool_input:{command:$c}}'; }
+NL=$'\n'; P='gh pr'
+
+t "merge: gh -R o/r pr merge"          deny  "$(c "$V" "gh -R o/r pr merge 1")"
+t "merge: gh api PUT .../merge"        deny  "$(c "$V" "gh api -X PUT repos/o/r/pulls/1/merge")"
+t "merge: graphql mergePullRequest"    deny  "$(c "$V" "gh api graphql -f query='mutation{mergePullRequest(input:{})}'")"
+
+t "create: no review"                  deny  "$(c "$U" "$P create --fill")"
+t "create: reviewed"                   allow "$(c "$V" "$P create --fill")"
+t "create: view is fine"               allow "$(c "$U" "$P view")"
+t "create: --help counts (strict)"     deny  "$(c "$U" "$P create --help")"
+t "create: new commit after review"    deny  "$(cd "$V" && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m two; c "$V" "$P create --fill")"
+(cd "$V" && bash "$(dirname "$G")/../skills/review-gate/scripts/mark-reviewed.sh" "test pass" >/dev/null)
+t "create: not a git repo (fail closed)" deny "$(c "$N" "gh -R o/r pr create --head feat")"
+
+t "bypass: gh pr new"                  deny  "$(c "$U" "$P new --fill")"
+t "bypass: gh -R o/r pr create"        deny  "$(c "$U" "gh -R o/r pr create --fill")"
+t "bypass: GH_REPO=x gh pr create"     deny  "$(c "$U" "GH_REPO=o/r $P create --fill")"
+t "bypass: env gh"                     deny  "$(c "$U" "env $P create --fill")"
+t "bypass: command gh"                 deny  "$(c "$U" "command $P create")"
+t "bypass: full path gh"               deny  "$(c "$U" "/opt/homebrew/bin/$P create")"
+t "bypass: backslash gh"               deny  "$(c "$U" "\\$P create")"
+t "bypass: { ...; }"                   deny  "$(c "$U" "{ $P create; }")"
+t "bypass: xargs"                      deny  "$(c "$U" "echo x | xargs $P create")"
+t "bypass: gh api POST pulls"          deny  "$(c "$U" "gh api repos/o/r/pulls -f head=b -f base=dev -f title=t")"
+t "bypass: cd other repo (reviewed cwd)" deny "$(c "$V" "cd $U && $P create --fill")"
+t "bypass: commit in same command"     deny  "$(c "$V" "git commit --allow-empty -m w && $P create --fill")"
+
+t "bypass: graphql createPullRequest"  deny  "$(c "$U" "gh api graphql -f query='mutation { createPullRequest(input:{}) }'")"
+t "bypass: multi-line gh api POST"     deny  "$(c "$U" "gh api repos/o/r/pulls \\${NL} -f title=t -f head=b")"
+t "bypass: gh api -fhead= attached"    deny  "$(c "$U" "gh api repos/o/r/pulls -fhead=b -fbase=dev")"
+t "bypass: g''h pr 'create'"           deny  "$(c "$U" "g''h pr 'create' --fill")"
+t "bypass: --head other (reviewed)"    deny  "$(c "$V" "$P create --head other --fill")"
+t "bypass: -R other (reviewed)"        deny  "$(c "$V" "gh -R o/other pr create --fill")"
+t "bypass: git -c k=v commit && create" deny "$(c "$V" "git -c user.name=x commit -qm w && $P create --fill")"
+t "bypass: npm version && create"      deny  "$(c "$V" "npm version patch && $P create --fill")"
+t "merge: quoted \"gh\" pr merge"       deny  "$(c "$V" "\"gh\" pr merge 1")"
+t "merge: gh pr \\newline merge"        deny  "$(c "$V" "$P \\${NL} merge 1")"
+t "merge: enablePullRequestAutoMerge"  deny  "$(c "$V" "gh api graphql -f query='mutation{enablePullRequestAutoMerge(input:{})}'")"
+t "mention counts (strict)"            deny  "$(c "$U" "git commit -m 'next: $P create'")"
+t "other gh pr verbs (allowed)"        allow "$(c "$U" "gh pr view 3; gh pr list --search create; gh pr checks")"
+t "create from file body (reviewed)"   allow "$(c "$V" "$P create --title 'Add login' --body-file .git/pr-body.md")"
+
+t "merge: GH (case, macOS)"            deny  "$(c "$V" "GH pr merge 12")"
+t "create: GH (case, macOS)"           deny  "$(c "$U" "GH pr create --fill")"
+t "gh api GET pulls (allowed)"         allow "$(c "$U" "gh api -X GET repos/o/r/pulls -f state=closed")"
 echo; echo "passed=$PASS failed=$FAIL"
 [ "$FAIL" = 0 ]

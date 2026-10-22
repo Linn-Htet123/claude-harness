@@ -1,0 +1,7 @@
+{"type":"thread.started","thread_id":"019f61e3-8e9f-7741-afde-f10f1300b33a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run that command now."}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/zsh -lc 'echo fixture-probe'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/zsh -lc 'echo fixture-probe'","aggregated_output":"fixture-probe\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"done"}}
+{"type":"turn.completed","usage":{"input_tokens":31843,"cached_input_tokens":25088,"output_tokens":69,"reasoning_output_tokens":0}}

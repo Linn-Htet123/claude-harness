@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f61b6-0c49-7b21-b860-227b20eb7424"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"hello duel"}}
+{"type":"turn.completed","usage":{"input_tokens":15866,"cached_input_tokens":9984,"output_tokens":6,"reasoning_output_tokens":0}}

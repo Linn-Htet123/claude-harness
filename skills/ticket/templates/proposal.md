@@ -4,7 +4,7 @@ title: {{ID}} {{TITLE}}
 status: draft
 resource: {{LINEAR_URL}}
 sources:
-  - id: linear
+  - id: ticket
     resource: {{LINEAR_URL}}
     title: Ticket {{ID}}
 ---
@@ -13,8 +13,26 @@ sources:
 ## Why
 {{Who is stuck, on what. Plain words. 2-4 lines.}}
 
-## What changes
-{{The change in one paragraph. Say what does NOT change too.}}
+## What Changes
+- {{The change, one bullet each. Mark breaking changes with **BREAKING**.}}
+- Does NOT change: {{...}}
+
+## Capabilities
+
+### New Capabilities
+- `{{CAPABILITY}}`: {{what this capability covers}}
+
+### Modified Capabilities
+<!-- Existing capabilities under openspec/specs/ whose requirements change. Leave empty if none. -->
+
+## Impact
+{{Affected code, APIs, dependencies, systems.}}
+
+## Out of scope
+- {{the most useful list in this file}}
+
+## User stories
+1. As a {{who}}, I want {{what}}, so that {{why}}.
 
 ## Key unknowns
 - U1: {{question we cannot answer yet}}
@@ -29,5 +47,6 @@ sources:
 
 ## Links
 - Research: [research.md](research.md)
-- Spec: [spec.md](spec.md)
+- Spec: [specs/{{CAPABILITY}}/spec.md](specs/{{CAPABILITY}}/spec.md)
 - Design: [design.md](design.md)
+- Tasks: [tasks.md](tasks.md)

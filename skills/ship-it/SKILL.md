@@ -63,11 +63,37 @@ Bad: `fixed stuff`, `updates`, `wip`
 
 Split unrelated changes into separate commits.
 
-## Step 5 - push and open the PR
+## Step 5 - review gate, push and open the PR
+
+Run `/review-gate` on the committed branch first. It must PASS: the
+guardrails hook blocks opening the PR until the current commit is reviewed.
+A commit after the review needs a new `/review-gate`.
 
 ```bash
 git push -u origin <branch>
 ```
+
+Find the real git folder (in a worktree `.git` is a file, not a folder):
+
+```bash
+git rev-parse --absolute-git-dir
+```
+
+Write the PR body (shape below) to `<that folder>/pr-body.md` with the **Write
+tool**, not with a shell heredoc. Put the `/review-gate` verdict line under
+**Verification**. Then open the PR as its own command, from the repo folder,
+on the branch itself, with the absolute path:
+
+```bash
+gh pr create --base <base> --title "<type>: <what changed>" --body-file <that folder>/pr-body.md
+```
+
+After the PR is open, delete `<that folder>/pr-body.md`, so the next PR never
+reuses an old body.
+
+The hook is strict: a command that has `cd`, a commit, `--head`/`-R`, or the
+words `gh pr create` inside its text is blocked. So keep the body in the file,
+and keep the title free of those words.
 
 PR body:
 
@@ -104,8 +130,3 @@ Merging is a human decision. That is not a formality - it is the one control
 that catches everything the machine missed. Every large engineering org that
 has published on this keeps the same rule: the agent opens the PR, a person
 merges it.
-
-## Then
-
-Ask `@reviewer` and, if it touches auth / payments / user data,
-`@security-reviewer` to look before you ping a person. Fresh eyes are cheap.
