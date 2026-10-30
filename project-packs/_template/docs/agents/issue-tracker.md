@@ -10,7 +10,7 @@ Pick ONE and delete the others.
 
 ## Option B — Linear
 - Use the Linear MCP tools (`get_issue`, `save_issue`, `list_issues`, `save_comment`). Team key: `<KEY>`.
-- Put the id in the branch name (`larry/key-123-slug`) so Linear links the PR by itself.
+- Put the id in the branch name (`me/key-123-slug`) so Linear links the PR by itself.
 - Blocking: Linear "blocked by" relation. Sub-issues: parent/child.
 
 ## Wayfinding operations (for /wayfinder)

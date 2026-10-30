@@ -1,11 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseLinearMap, ticketType, ticketStatus, isHitlType, mapNarrative } from '../scripts/linear-map.mjs';
-
-const here = dirname(fileURLToPath(import.meta.url));
 
 test('ticketType reads the wayfinder:<type> label, defaults to task', () => {
   assert.equal(ticketType(['wayfinder:research']), 'research');
@@ -23,12 +18,12 @@ test('isHitlType: grilling/prototype are HITL, research/task are not', () => {
 });
 
 test('ticketStatus maps Linear state types', () => {
-  assert.equal(ticketStatus('completed', 'Anthony'), 'closed');
+  assert.equal(ticketStatus('completed', 'alice'), 'closed');
   assert.equal(ticketStatus('canceled', null), 'closed');
-  assert.equal(ticketStatus('started', 'Anthony'), 'claimed', 'in-progress + assignee → claimed');
+  assert.equal(ticketStatus('started', 'alice'), 'claimed', 'in-progress + assignee → claimed');
   assert.equal(ticketStatus('started', null), 'frontier', 'in-progress, unassigned → frontier');
   assert.equal(ticketStatus('backlog', null), 'frontier');
-  assert.equal(ticketStatus('unstarted', 'Anthony'), 'frontier', 'assigned but not started → still frontier');
+  assert.equal(ticketStatus('unstarted', 'alice'), 'frontier', 'assigned but not started → still frontier');
 });
 
 test('parseLinearMap transforms a normalised payload into the map shape', () => {
@@ -49,21 +44,30 @@ test('parseLinearMap transforms a normalised payload into the map shape', () => 
 });
 
 test('mapNarrative pulls destination + out-of-scope out of a Linear body', () => {
-  const body = '## Destination\\n\\n**Redrawn 2026-07-13 (Anthony, via [SPS-143](<https://x>)) — Route C: Lovable parity core + creator vertical extensions.** more\\n\\n## Out of scope\\n\\n* **Full 1:1 Lovable clone (D0-A)** — rejected\\n* **Native mobile** — later\\n\\n## Next';
+  const body = '## Destination\\n\\n**Redrawn 2026-07-13 (alice, via [ABC-143](<https://x>)) — Route C: Lovable parity core + creator vertical extensions.** more\\n\\n## Out of scope\\n\\n* **Full 1:1 Lovable clone (D0-A)** — rejected\\n* **Native mobile** — later\\n\\n## Next';
   const { destination, outOfScope } = mapNarrative(body);
   assert.equal(destination, 'Route C: Lovable parity core + creator vertical extensions');
   assert.deepEqual(outOfScope, ['Full 1:1 Lovable clone (D0-A)', 'Native mobile']);
 });
 
-// The strongest test: the REAL 82-ticket SPS-81 payload (captured from Linear) → a valid map.
-test('parseLinearMap handles the real 82-ticket SPS-81 payload deterministically', () => {
-  const { issues } = JSON.parse(readFileSync(join(here, 'fixtures', 'linear-sps81-issues.json'), 'utf8'));
-  const map = parseLinearMap({ issues, mapId: 'SPS-81', mapName: 'Studios Engine — Map', mapBody: '' });
+// A large generated payload (82 children, the size of a real map) → a valid map, deterministically.
+test('parseLinearMap handles a large 82-ticket payload deterministically', () => {
+  const types = ['research', 'task', 'grilling', 'prototype'];
+  const issues = Array.from({ length: 82 }, (_, i) => {
+    const n = i + 1;
+    const statusType = n <= 58 ? 'completed' : n <= 73 ? 'canceled' : n <= 80 ? 'backlog' : 'started';
+    return {
+      id: `ABC-${n}`, title: `Ticket ${n}`, statusType,
+      labels: n % 5 === 0 ? [] : [`wayfinder:${types[n % types.length]}`],
+      assignee: statusType === 'started' ? 'alice' : null,
+    };
+  });
+  const map = parseLinearMap({ issues, mapId: 'ABC-0', mapName: 'Engine — Map', mapBody: '' });
   assert.equal(map.tickets.length, 82, 'every child becomes a ticket');
   // every ticket is well-formed
   for (const t of map.tickets) {
-    assert.ok(t.id && /^SPS-\d+$/.test(t.id), `real id ${t.id}`);
-    assert.ok(['research', 'task', 'grilling', 'prototype'].includes(t.type));
+    assert.ok(t.id && /^ABC-\d+$/.test(t.id), `id ${t.id}`);
+    assert.ok(types.includes(t.type));
     assert.ok(['closed', 'claimed', 'frontier'].includes(t.status));
     assert.equal(t.hitl, t.type === 'grilling' || t.type === 'prototype');
     assert.deepEqual(t.blockedBy, []);
@@ -71,6 +75,7 @@ test('parseLinearMap handles the real 82-ticket SPS-81 payload deterministically
   // this map is mostly shipped — the majority of tickets are closed, and there IS a live frontier
   const closed = map.tickets.filter(t => t.status === 'closed').length;
   const frontier = map.tickets.filter(t => t.status === 'frontier').length;
-  assert.ok(closed > 40, `most work is done (${closed} closed)`);
-  assert.ok(frontier >= 1, `there is a duelable frontier (${frontier})`);
+  assert.equal(closed, 73, 'completed + canceled are closed');
+  assert.equal(frontier, 7, 'backlog tickets are the frontier');
+  assert.equal(map.tickets.filter(t => t.status === 'claimed').length, 2);
 });

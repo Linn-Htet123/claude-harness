@@ -1,8 +1,8 @@
 
-# Larry — personal Claude Code memory
+# <Your name> — personal Claude Code memory
 
 ## Who I am
-- Larry (Thar Linn Htet), full-stack dev on Manifest Movies.
+- <Your name>, <your role> on <your project>.
 - Talk casual ("bro" is fine). Simple words, short sentences, no idioms.
 - One step at a time — confirm each step before the next.
 - Big picture first (the map), then the steps. Teach with easy examples.
@@ -11,17 +11,17 @@
 ## Safety rules (always)
 - Never push to main. Never merge my own PR. Ask before anything that changes code, data, money, or anything live.
 - Database: db:migrate only. NEVER db:push.
-- Becca prompt / conversation changes need Eric or Anthony sign-off before merge.
-- Money / legal / equity / strategy -> Eric.
+- <Sensitive area, e.g. the AI prompt> changes need <owner> sign-off before merge.
+- Money / legal / equity / strategy -> <owner>.
 
-## My full profile + memory (single source = the mmv-tech vault)
-@/Users/tharlinhtet/Workspace/MMV/mmv-tech/larry/how-larry-works-with-ai.md
-@/Users/tharlinhtet/Workspace/MMV/mmv-tech/larry/larry-starter-memory.md
+## My full profile + memory (single source = your notes vault)
+@<path-to-vault>/how-i-work-with-ai.md
+@<path-to-vault>/starter-memory.md
 
 ## Where things are
-- Tech vault: /Users/tharlinhtet/Workspace/MMV/mmv-tech  (read TECH-TRUTH.md + README.md first)
-- Code: /Users/tharlinhtet/Workspace/MMV/manifest-movies-next  (read its CLAUDE.md before coding)
-- Live truth: Linear = tickets, GitHub = code, Railway = backend, Sentry = errors.
+- Tech vault: <path-to-vault>  (read its README.md first)
+- Code: <path-to-repo>  (read its CLAUDE.md before coding)
+- Live truth: <tracker> = tickets, GitHub = code, <host> = backend, <error tool> = errors.
 - Current work: check Linear (tickets = truth). A ticket id written in a file goes stale; do not trust it.
 
 ## How we work (the loop, same in every project)
@@ -29,12 +29,10 @@
 - Each ticket is one OpenSpec change in `openspec/changes/<id>-<slug>/` (proposal, research, specs/<capability>/spec.md, design, tasks). Read that folder, not the whole repo. `openspec/specs/` = what the system already promises. Old tickets may still be in `docs/changes/`.
 - Fresh eyes before a PR: @verifier (spec coverage) + the review gate below. @scout for research. Never merge.
 - Guardrail hooks block: push to main, force push, PR merge, schema push, `rm -rf ~`, reading `.env`. If a hook blocks you, say so in one line and stop.
-- Setup guide + research: ~/GITHUB/claude-harness/docs/agentic-workflow-setup.md
+- User manual: ~/GITHUB/claude-harness/docs/USER-MANUAL.md
 - Any "how do I / what is / which key" question about Herdr, hud, the harness, the loop, hooks, skills or agents (even with typos like "herbr"): use the `harness-help` skill. It has the cheat sheet and reads the manual. Never guess about these.
 
 ## Output style: ASD-STE100
-(From Anthony's setup, 2026-10-21.)
-
 Write your chat responses in Simplified Technical English. Load the `asd-ste100` skill at the start of the session.
 
 The rules, in short:
@@ -59,7 +57,7 @@ Run BOTH before you open a PR. They hunt different things, and neither finds the
 
 Fix the defect findings. Judge the ponytail findings: it lists, it never edits, and some of what it names is a deliberate cost. State the ones you keep and why.
 
-**Why both.** A defect review asks "is this wrong". It never asks "should this exist". On Anthony's SPS-397 work, four review rounds found seven real defects across 546 lines and never questioned the size. One ponytail pass then found about 100 deletable lines. **The axis a review does not have is invisible to how many rounds you run.**
+**Why both.** A defect review asks "is this wrong". It never asks "should this exist". On one real ticket, four review rounds found seven real defects across 546 lines and never questioned the size. One ponytail pass then found about 100 deletable lines. **The axis a review does not have is invisible to how many rounds you run.**
 
 A plugin or skill added after a session starts is absent from that session's skill list, and the Skill tool answers "Unknown skill". Read its `SKILL.md` directly and apply it until the next restart.
 
@@ -76,7 +74,7 @@ Write entries in ASD-STE100. Do not skip this for small changes. A one-line entr
 
 The journal feeds a memory / learning loop. It records the SESSION; the changelog above records the REPO. Do not duplicate one into the other.
 
-Write your entry when a long-running session winds down. Also write it when Larry says "wrap up", and after you complete a major thread of work. Do not wait for a signal that the session is over; you will not get one.
+Write your entry when a long-running session winds down. Also write it when the user says "wrap up", and after you complete a major thread of work. Do not wait for a signal that the session is over; you will not get one.
 
 1. Copy `~/.claude/shared/journal/TEMPLATE.md` to `~/.claude/shared/journal/YYYY-MM-DD-<session-slug>.md`.
 2. Fill the three sections. "What was learned" is the one that matters: corrections, claims that died and how, techniques that worked, traps hit.

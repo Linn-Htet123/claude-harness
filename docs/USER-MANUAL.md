@@ -1,4 +1,4 @@
-# User manual — Larry's agentic workflow
+# User manual — the agentic workflow
 
 *Simple words. Short steps. Read section 1 and 3 first; the rest is reference.*
 
@@ -23,7 +23,7 @@ You have 4 layers:
 ## 1. Every day: start work (2 minutes)
 
 ```bash
-cd ~/Workspace/MMV/manifest-movies-next     # any repo
+cd ~/Workspace/my-repo     # any repo
 herdr
 ```
 
@@ -99,7 +99,7 @@ In the Claude pane type:
 | **3 Ready** | runs the gate check (`ready-check.sh`, which also runs `openspec validate`). Shows you the spec and the slices | read the scenarios. Add edge cases you know about. Say `go` = you approve. Only then it creates Linear sub-issues |
 | **4 Implement** | makes a branch, writes a failing test per scenario, then the code, then runs the full test suite. Small work: `/tdd-loop`. Big work (3+ slices): `/implement-spec` builds slices in parallel worktrees. Ticks `tasks.md` boxes. Pastes real output | read the test output. `go` for the next slice |
 | **5 QA** | the `@qa` agent runs the scenario tests + a live browser pass, writes `qa-report.md` | read the pass/fail table. Any **edge** scenario with no test is a real gap |
-| **6 Done** | commit, then **`/review-gate`**: one command runs `@verifier` + `/code-review` (or `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete) + `@security-reviewer` when needed. It must PASS: the hook blocks opening a PR until the current commit is reviewed. Then `/ship-it` opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review, adds a line to `~/.claude/shared/agent-changelog.md` | read the PR. Ask Anthony to review |
+| **6 Done** | commit, then **`/review-gate`**: one command runs `@verifier` + `/code-review` (or `/thermonuclear-review` for risky work) + `/ponytail-review` (what to delete) + `@security-reviewer` when needed. It must PASS: the hook blocks opening a PR until the current commit is reviewed. Then `/ship-it` opens a **PR to dev**. Never merges. Moves the Linear ticket to In Review, adds a line to `~/.claude/shared/agent-changelog.md` | read the PR. Ask a teammate to review |
 | **7 Measure** | days later: `/measure openspec/changes/mmv-123-slug` checks PostHog numbers, writes learnings, adds production bugs as new edge scenarios. When you say it is finished: `openspec archive mmv-123-slug --yes` merges the spec into `openspec/specs/` | read the learnings |
 
 **Lost?** Look at the HUD. Or type in a terminal:
@@ -160,7 +160,7 @@ From a normal terminal: `hud --skills review` lists matching skills and exits.
 | `/thermonuclear-review` | deep review for risky work (auth, money, data, migrations) |
 | `/ponytail-review` | what can we delete? (over-engineering only, never edits) |
 | `/ponytail` | "be lazy": the simplest fix that works |
-| `/two-axis-review` | Anthony's review: repo standards + spec, side by side |
+| `/two-axis-review` | repo standards + spec, side by side |
 | `/asd-ste100` | rewrite hard English into simple, one-meaning English |
 | `/duel <task>` | Claude vs Codex design duel (needs `codex login` once) |
 | `/opsx:propose` `explore` `apply` `update` `sync` `archive` | OpenSpec short path for small work |
@@ -195,7 +195,7 @@ These are **code, not advice**. Claude cannot talk its way past them.
 |---|---|
 | `git push` to `main` / `master` | never push to main. This is a simple text check; GitHub branch protection is the real lock |
 | any force push | too easy to lose work |
-| `gh pr merge` (any flags, `gh api` merge, graphql) | a human merges (Anthony) |
+| `gh pr merge` (any flags, `gh api` merge, graphql) | a human merges |
 | opening a PR before `/review-gate` passed on the current commit | every PR gets the review first. Strict: text that only mentions the PR-open words is blocked too, so `/ship-it` puts the PR body in a file |
 | `db:push` / `drizzle-kit push` / `prisma db push` | migrations only |
 | `rm -rf ~` or `/` | obvious |
@@ -223,7 +223,7 @@ Too noisy? Open `~/.claude/settings.json` and delete the `Stop` block (turn ding
 
 **One command:**
 ```bash
-harness-up ~/Workspace/MMV/manifest-movies-next ~/Workspace/triosys/massive-qr ~/Workspace/triosys/lovememora
+harness-up ~/Workspace/repo-a ~/Workspace/repo-b ~/Workspace/repo-c
 ```
 It makes one Herdr workspace per repo, splits it, starts `claude` on the left and `hud` on the right.
 Repos that already have a workspace are skipped. Add `--no-claude` if you want to start Claude yourself.
@@ -233,7 +233,7 @@ Then type `herdr` and press `ctrl+b` `w` to jump between the three.
 Work on A, hear the ding from B, switch (`ctrl+b` `w`), say `go`, switch back. The stops are your sync points.
 
 - Different repos: one Herdr workspace each. `ctrl+b` `w` to switch.
-- Same repo, two tasks: `herdr worktree create --branch larry/mmv-123` → opens as its own workspace with its own copy of the code. Or `claude --worktree mmv-123`.
+- Same repo, two tasks: `herdr worktree create --branch me/abc-123` → opens as its own workspace with its own copy of the code. Or `claude --worktree abc-123`.
 - Rule of thumb: 2 agents running at once is comfortable. 3+ costs 3x tokens and you cannot follow them.
 
 Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claude app. Or install Moshi and SSH to your Mac.
@@ -250,25 +250,22 @@ Phone: type `/remote-control` inside the Claude pane, scan the QR with the Claud
 | "Blocked: commit … has no review" | run `/review-gate`. A commit after the review needs a new run |
 | "Blocked: ..." on something safe | tell me the exact command; the rule may need a fix in `hooks/guardrails.sh` |
 | After reboot Herdr panes are empty | run `herdr integration install claude` once (done already), and `resume_agents_on_restore = true` is set |
-| Playwright / browser pass not running | type `/mcp` in Claude and check `playwright` is Connected. A dev server must be up (`pnpm dev:becca`) |
+| Playwright / browser pass not running | type `/mcp` in Claude and check `playwright` is Connected. A dev server must be up (for example `pnpm dev`) |
 | Claude keeps forgetting rules after a long session | `/compact` or `/clear`. Long sessions drop instructions |
 | I changed a skill and Claude uses the old text | restart the Claude session; skills load at start |
-| Want to see what the setup did | `~/GITHUB/claude-harness/docs/agentic-workflow-setup.md` |
 
 ---
 
 ## 10. Where things live
 
 ```
-~/GITHUB/claude-harness/          the harness (git, private on GitHub: Linn-Htet123/claude-harness)
+~/GITHUB/claude-harness/          the harness (git)
   skills/  agents/  hooks/        symlinked into ~/.claude by ./install.sh
   skills/ticket/templates/        the files of a change folder
   skills/openspec-*/ commands/opsx/  OpenSpec skills + /opsx:* commands (global)
   skills/ticket/scripts/          new-change, ready-check, next-step, okf-subgraph, hud
   project-packs/init.sh           = harness-init
   docs/USER-MANUAL.md             this file
-  docs/agentic-workflow-setup.md  the map + what was changed + what is pending
-  docs/research/                  the 4 research reports (pi.dev, Herdr, spec tools, Claude Code)
 ~/.claude/settings.json           hooks + statusline (backups in ~/.claude/backups/)
 ~/.claude/CLAUDE.md               who you are + the loop, loads in every session
 ~/.claude/shared/agent-changelog.md  one line per shipped change

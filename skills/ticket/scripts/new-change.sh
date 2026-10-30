@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Create the OpenSpec change openspec/changes/<id>-<slug>/ and fill it from the templates.
 # usage: new-change.sh <ID> <slug> [title] [ticket-url] [capability]
-# example: new-change.sh MMV-278 evening-ritual "Evening 5-turn ritual" https://linear.app/manifest-movies/issue/MMV-278
+# example: new-change.sh ABC-123 dark-mode "Dark mode toggle" https://linear.app/acme/issue/ABC-123
 # example: new-change.sh 42 login-form "Login form" https://github.com/me/repo/issues/42 user-auth
 # capability = the spec folder under specs/ (kebab-case). Defaults to the slug.
 set -euo pipefail
@@ -17,7 +17,7 @@ TPL="$(cd "$(dirname "${BASH_SOURCE[0]}")/../templates" && pwd)"
 DATE="$(date +%Y-%m-%d)"
 if [ -e "$DIR" ]; then echo "exists: $DIR"; exit 0; fi
 if [ ! -d "$ROOT/openspec" ]; then
-  echo "This repo has no openspec/ folder. Ask Larry, then run once: (cd $ROOT && openspec init --tools none)"; exit 1
+  echo "This repo has no openspec/ folder. Ask the user, then run once: (cd $ROOT && openspec init --tools none)"; exit 1
 fi
 (cd "$ROOT" && openspec new change "$NAME" >/dev/null)
 mkdir -p "$DIR/specs/$CAP"

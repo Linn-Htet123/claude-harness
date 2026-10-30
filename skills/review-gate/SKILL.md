@@ -12,13 +12,13 @@ One command for the whole review. It reports; it does not edit code.
 ## 1. Scope
 
 1. Base branch: the argument, else the repo CLAUDE.md (MMV = `dev`), else `git symbolic-ref --short refs/remotes/origin/HEAD`, else `main`.
-2. `git status --porcelain --untracked-files=no`. Uncommitted changes to tracked files → tell Larry to commit first (the mark is per commit), and stop. Untracked files do not count.
+2. `git status --porcelain --untracked-files=no`. Uncommitted changes to tracked files → tell the user to commit first (the mark is per commit), and stop. Untracked files do not count.
 3. `git diff --stat $(git merge-base HEAD <base>)...HEAD`. Empty diff → say so and stop.
 4. Change folder: `openspec/changes/<id>-*` matching the branch's ticket id (old: `docs/changes/<ID>-*`). It may not exist.
 5. **Risky?** Yes when `--strict`, or the diff is over ~500 changed lines, or it touches auth, payments/money, migrations or schema, permissions/RLS, or secrets handling.
 6. **Sensitive?** Yes when the diff touches auth, user data, uploads, external input parsing, or secrets.
 
-Tell Larry in two lines: base, size, which reviewers will run and why.
+Tell the user in two lines: base, size, which reviewers will run and why.
 
 ## 2. Run the reviewers in parallel
 
@@ -59,7 +59,7 @@ Rules:
 
 ## 4. Mark or stop
 
-- **PASS:** run `bash ~/.claude/skills/review-gate/scripts/mark-reviewed.sh "<verdict line>"`. Tell Larry the PR can be opened (`/ship-it`).
+- **PASS:** run `bash ~/.claude/skills/review-gate/scripts/mark-reviewed.sh "<verdict line>"`. Tell the user the PR can be opened (`/ship-it`).
 - **BLOCKED:** do not mark. List the blockers and stop. After the fixes are committed, run `/review-gate` again (a new commit needs a new mark).
 
 Never write the mark by hand or any other way, and never mark a BLOCKED review. The mark is the promise that this commit was reviewed. (The hook catches forgetting, not a determined bypass.)

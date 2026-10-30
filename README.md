@@ -67,14 +67,14 @@ Also install the two plugin packs inside Claude Code:
 ## Layout
 
 - `agents/` — specialists that run in fresh context
-- `skills/` — SDLC playbooks, incl. `openspec-*` (OpenSpec) and Anthony's `ponytail`, `ponytail-review`, `thermonuclear-review`, `to-spec`, `to-tickets`, `implement-spec`, `two-axis-review`, `asd-ste100`, `duel`
+- `skills/` — SDLC playbooks, incl. `openspec-*` (OpenSpec) and `ponytail`, `ponytail-review`, `thermonuclear-review`, `to-spec`, `to-tickets`, `implement-spec`, `two-axis-review`, `asd-ste100`, `duel`
 - `openspec/` — this repo's own OpenSpec folder (`openspec init --tools none`); any repo using `/ticket` needs one
 - `commands/` — small shortcuts; `commands/opsx/` = the `/opsx:*` OpenSpec commands (install.sh links sub-folders)
 - `memory/lessons.md` — what broke before; read before debugging
 - `hooks/` — guardrails + notify + statusline, **ON** (wired in `~/.claude/settings.json`)
 - `templates/` — `CLAUDE.md` starter for any repo
 - `project-packs/` — per-repo layer (rules, launch.json, .mcp.json, tracker doc) + `apply.sh`
-- `docs/agentic-workflow-setup.md` — the map of this whole setup; `docs/research/` — sources
+- `docs/USER-MANUAL.md` — the user manual
 
 ## Update
 
