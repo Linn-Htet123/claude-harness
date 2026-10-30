@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup-new-mac.sh — install Larry's whole harness on a fresh Mac in one go.
+# setup-new-mac.sh — install the whole harness on a fresh Mac in one go.
 #
 #   git clone https://github.com/Linn-Htet123/claude-harness.git ~/GITHUB/claude-harness
 #   cd ~/GITHUB/claude-harness && ./setup-new-mac.sh
@@ -64,14 +64,6 @@ if [ -s "$HOME/.claude/CLAUDE.md" ]; then skip "~/.claude/CLAUDE.md exists — n
 mkdir -p "$HOME/.claude/shared/journal"
 for f in agent-changelog.md journal/TEMPLATE.md; do
   if [ -e "$HOME/.claude/shared/$f" ]; then skip "shared/$f exists"; else cp "$H/templates/shared/$f" "$HOME/.claude/shared/$f"; ok "shared/$f installed"; fi
-done
-
-echo "==> 5b. Claude memory notes (what past sessions learned)"
-MEMDIR="$HOME/.claude/projects/-Users-tharlinhtet-my/memory"
-mkdir -p "$MEMDIR"
-for f in "$H"/memory/claude-auto-memory/*.md; do
-  [ -f "$f" ] || continue
-  if [ -e "$MEMDIR/$(basename "$f")" ]; then skip "memory $(basename "$f") exists"; else cp "$f" "$MEMDIR/"; ok "memory $(basename "$f")"; fi
 done
 
 echo "==> 6. Herdr"

@@ -6,7 +6,6 @@ works in **every** repo. A project pack is the small per-repo layer on top.
 ```
 project-packs/
   _template/                 <- copy this into any new repo
-  manifest-movies-next/      <- worked example (MMV)
   apply.sh <repo-path>       <- copies the local (gitignored-safe) parts for you
 ```
 

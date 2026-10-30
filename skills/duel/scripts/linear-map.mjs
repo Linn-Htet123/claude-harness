@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Deterministic Linear → wayfinder-map sync. A single LLM agent cannot reliably transform a
-// large map (SPS-81 = 82 children, ~126KB from list_issues) within budget — it timed out 4×.
+// large map (82 children, ~126KB from list_issues) within budget — it timed out 4×.
 // list_issues returns clean JSON, so the right tool is a parser, not a model. This module does
 // the fetch (GraphQL) + the transform (pure, unit-tested against real data). Used by
 // tracker-agent.mjs for the sync op when LINEAR_API_KEY is set; otherwise it falls back to the

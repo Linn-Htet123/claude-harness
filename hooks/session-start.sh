@@ -15,5 +15,5 @@ MISSING=""
 [ -f "$ROOT/CLAUDE.md" ]              || MISSING="$MISSING CLAUDE.md"
 [ -d "$ROOT/openspec" ] || [ -d "$ROOT/docs/changes" ] || MISSING="$MISSING openspec/"
 [ -z "$MISSING" ] && exit 0
-echo "Harness note: this repo ($(basename "$ROOT")) is missing:$MISSING. Offer Larry once, in one line: run \`~/GITHUB/claude-harness/project-packs/init.sh $ROOT\` then \`/onboard-repo\`. If he says no, do not mention it again this session."
+echo "Harness note: this repo ($(basename "$ROOT")) is missing:$MISSING. Offer the user once, in one line: run \`~/GITHUB/claude-harness/project-packs/init.sh $ROOT\` then \`/onboard-repo\`. If they say no, do not mention it again this session."
 exit 0

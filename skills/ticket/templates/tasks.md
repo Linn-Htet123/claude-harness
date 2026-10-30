@@ -5,7 +5,7 @@ status: draft
 ---
 # Tasks — {{ID}} {{TITLE}}
 
-Source of truth is this file. Sync to the issue tracker (Linear MCP, gh issue, Jira) after Larry approves.
+Source of truth is this file. Sync to the issue tracker (Linear MCP, gh issue, Jira) after the user approves.
 Each group is a tracer-bullet slice: a thin path through every layer (schema → API → UI → test) that can be demoed alone.
 `/opsx:apply` and `/implement-spec` read the checkboxes; `- [x]` = done.
 

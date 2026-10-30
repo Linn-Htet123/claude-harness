@@ -14,12 +14,12 @@ NAME="$(basename "$DIR")"
 echo "STAGE: ${STAGE:-unknown}"
 case "$STAGE" in
   intent)    echo "NEXT: Step 2 Spec & Design — grilling interview, fill proposal.md, specs/<capability>/spec.md, design.md, tasks.md; send @scout for research.md" ;;
-  spec)      echo "NEXT: Step 3 Ready — run scripts/ready-check.sh $DIR and fix FAIL lines; Larry approves; set stage: ready" ;;
+  spec)      echo "NEXT: Step 3 Ready — run scripts/ready-check.sh $DIR and fix FAIL lines; the user approves; set stage: ready" ;;
   ready)     echo "NEXT: Step 4 Implement — branch/worktree; /tdd-loop per scenario (small) or /implement-spec (big); tick tasks.md boxes; set stage: implement" ;;
   implement) echo "NEXT: Step 5 QA — dispatch @qa with $DIR; it writes qa-report.md; set stage: qa" ;;
   qa)        echo "NEXT: Step 6 Done — set stage: done + tick tasks.md, commit, /review-gate (must PASS), then /ship-it (PR to dev, never main)" ;;
   done)      echo "NEXT: Step 7 Measure — after merge + deploy + N days, run /measure $DIR; set stage: measure" ;;
-  measure)   echo "NEXT: Close — when Larry says it is finished: set stage: closed, then openspec archive $NAME --yes; commit, /review-gate, /ship-it" ;;
+  measure)   echo "NEXT: Close — when the user says it is finished: set stage: closed, then openspec archive $NAME --yes; commit, /review-gate, /ship-it" ;;
   closed)    echo "NEXT: nothing. This change is closed." ;;
   *)         echo "NEXT: index.md has no known 'stage:'. Set one of: intent spec ready implement qa done measure closed" ;;
 esac

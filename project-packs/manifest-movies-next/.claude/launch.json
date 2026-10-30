@@ -1,7 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    { "name": "becca", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:becca"], "port": 3001 },
-    { "name": "dashboard", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev:dashboard"], "port": 3000 }
-  ]
-}

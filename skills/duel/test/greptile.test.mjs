@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseScore, parseCheckState, parseReviewComments, greptilePassed } from '../scripts/greptile.mjs';
 
-// real Greptile issue-comment shape (captured from spases-ai/spases PR #270)
+// real Greptile issue-comment shape
 const scored = (n) => `<h3>Greptile Summary</h3>\nThis PR does a thing.\n<h3>Confidence Score: ${n}/5</h3>\nnotes`;
 
 test('parseScore reads the confidence score from the LATEST Greptile comment', () => {
   const comments = JSON.stringify([
-    { user: { login: 'anthony' }, body: 'lgtm' },
+    { user: { login: 'alice' }, body: 'lgtm' },
     { user: { login: 'greptile-apps[bot]' }, body: scored(3) },
     { user: { login: 'greptile-apps[bot]' }, body: scored(5) }, // a later pass — wins
   ]);
@@ -32,7 +32,7 @@ test('parseCheckState maps the Greptile Review check', () => {
 test('parseReviewComments extracts actionable Greptile inline comments', () => {
   const json = JSON.stringify([
     { user: { login: 'greptile-apps[bot]' }, path: 'src/a.ts', line: 42, body: 'This can throw on null.' },
-    { user: { login: 'anthony' }, path: 'src/b.ts', line: 1, body: 'human note' },
+    { user: { login: 'alice' }, path: 'src/b.ts', line: 1, body: 'human note' },
     { user: { login: 'greptile-apps[bot]' }, path: 'src/c.ts', original_line: 7, body: '  ' }, // empty → skipped
   ]);
   const out = parseReviewComments(json);

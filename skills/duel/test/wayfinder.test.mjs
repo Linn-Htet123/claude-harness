@@ -13,11 +13,11 @@ const mk = (over = {}) => {
 
 test('setConfig derives tracker + slug and writes config.json', async () => {
   const { duelsDir, wf } = mk();
-  const { mapSlug } = await wf.setConfig('https://linear.app/spases/issue/SPS-81/studios-engine-map');
-  assert.equal(mapSlug, 'studios-engine-map');
+  const { mapSlug } = await wf.setConfig('https://linear.app/acme/issue/ABC-81/engine-map');
+  assert.equal(mapSlug, 'engine-map');
   const cfg = JSON.parse(readFileSync(join(duelsDir, 'wayfinder', mapSlug, 'config.json'), 'utf8'));
   assert.equal(cfg.tracker, 'linear');
-  assert.equal(cfg.url, 'https://linear.app/spases/issue/SPS-81/studios-engine-map');
+  assert.equal(cfg.url, 'https://linear.app/acme/issue/ABC-81/engine-map');
 });
 
 test('mapRepo returns the build repo stored on the map config (null by default)', async () => {
@@ -25,8 +25,8 @@ test('mapRepo returns the build repo stored on the map config (null by default)'
   const { mapSlug } = await wf.setConfig('https://linear.app/x/issue/M/m');
   assert.equal(wf.mapRepo(mapSlug), null, 'no build repo until one is set');
   const cp = join(duelsDir, 'wayfinder', mapSlug, 'config.json');
-  const c = JSON.parse(readFileSync(cp, 'utf8')); c.repo = '/Users/x/work/spases'; writeFileSync(cp, JSON.stringify(c));
-  assert.equal(wf.mapRepo(mapSlug), '/Users/x/work/spases');
+  const c = JSON.parse(readFileSync(cp, 'utf8')); c.repo = '/Users/x/work/acme'; writeFileSync(cp, JSON.stringify(c));
+  assert.equal(wf.mapRepo(mapSlug), '/Users/x/work/acme');
 });
 
 test('syncMap spawns the agent, merges hex coords, writes map.json', async () => {
@@ -169,11 +169,11 @@ test('finalizeTicket runs the finalize agent, then reflects the close+hold LOCAL
 
 test('decomposeTicket runs the write agent to split a plan into child tickets', async () => {
   const { duelsDir, wf } = mk();
-  const { mapSlug } = await wf.setConfig('https://linear.app/x/issue/SPS-81/m');
-  const r = await wf.decomposeTicket(mapSlug, 'SPS-169', 'Billing page', '# a huge plan\n...', 400);
-  assert.deepEqual([r.ok, r.parent, r.created], [true, 'SPS-169', 3]);
+  const { mapSlug } = await wf.setConfig('https://linear.app/x/issue/ABC-81/m');
+  const r = await wf.decomposeTicket(mapSlug, 'ABC-169', 'Billing page', '# a huge plan\n...', 400);
+  assert.deepEqual([r.ok, r.parent, r.created], [true, 'ABC-169', 3]);
   // it handed the agent the right input
   const dec = JSON.parse(readFileSync(join(duelsDir, 'wayfinder', mapSlug, 'decompose-input.json'), 'utf8'));
-  assert.deepEqual([dec.parentTicketId, dec.maxLoc], ['SPS-169', 400]);
+  assert.deepEqual([dec.parentTicketId, dec.maxLoc], ['ABC-169', 400]);
   assert.ok(dec.plan.includes('a huge plan'));
 });

@@ -7,7 +7,7 @@ You are the **orchestrator and scorekeeper** of a duel between two contestants:
 - **claude** — a fresh subagent you spawn via the Agent tool (general-purpose). It must never share your context; give it only what this skill says to.
 - **codex** — driven via `node ~/.claude/skills/duel/scripts/codex-duel.mjs`.
 
-**Model tiering (standing, Anthony 2026-08-11):** design and rebuttal subagents (rounds 1-2) inherit the session model; that is the planning work. Any subagent that WRITES or REVIEWS code (the winner-is-claude implementation step, and every claude-side checkpoint attack or defense) is spawned with `model: "opus"`.
+**Model tiering (standing rule):** design and rebuttal subagents (rounds 1-2) inherit the session model; that is the planning work. Any subagent that WRITES or REVIEWS code (the winner-is-claude implementation step, and every claude-side checkpoint attack or defense) is spawned with `model: "opus"`.
 
 All duel state lives in `~/.claude/duels/` (call it `$DUELS`). The skill dir is `~/.claude/skills/duel` (call it `$SKILL`). Log **every** contestant utterance and orchestrator decision to the duel's `events.jsonl` — the user watches live at http://localhost:4321. Log your own messages with `node $SKILL/scripts/append-event.mjs <duel-dir> '{"actor":"orchestrator","role":"status","round":<n>,"content":"..."}'`.
 

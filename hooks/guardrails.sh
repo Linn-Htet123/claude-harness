@@ -3,7 +3,7 @@
 # Reads the hook JSON on stdin. Prints a JSON "deny" for the few things below.
 # Prints nothing and exits 0 for everything else (= allowed).
 #
-# Blocks (Larry's rules, enforced in every project, cannot be talked out of):
+# Blocks (the user's rules, enforced in every project, cannot be talked out of):
 #   1. git push to main/master (force or not), and any force push
 #   2. merging a PR (gh pr merge, gh api .../merge)  -> a human merges
 #   3. schema push (db:push / drizzle-kit push / prisma db push) -> migrations only
@@ -42,7 +42,7 @@ if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
   # 1b. force push anywhere
   if printf '%s' "$CMD" | grep -Eq 'git[[:space:]]+push' \
      && printf '%s' "$CMD" | grep -Eq '(--force([^-]|$)|--force-with-lease|[[:space:]]-f([[:space:]]|$))'; then
-    deny "Blocked: force push. Ask Larry to do this by hand if it is really needed."
+    deny "Blocked: force push. Ask the user to do this by hand if it is really needed."
   fi
 
   # gh-intent.pl reads the command once (quotes removed, lines joined) and prints tags

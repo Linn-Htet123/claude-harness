@@ -1,16 +1,15 @@
 ---
 name: harness-help
-description: Answer any question about how Larry works with Claude Code - the harness, Herdr (keys, panes, workspaces, fresh start), the hud dashboard, harness-init / harness-up, the /ticket loop and its 7 steps, the OpenSpec change folder (openspec/changes/, old docs/changes/), /opsx commands, the review gate, skills, agents, hooks and what they block, notifications, statusline, where files live, troubleshooting. Use whenever Larry asks "how do I...", "what is...", "which command...", "why is X blocked", or mentions herdr, hud, harness, pane, workspace, the loop, or a skill/agent name - even with typos (herbr, harnes, hub).
+description: Answer any question about how you work with Claude Code - the harness, Herdr (keys, panes, workspaces, fresh start), the hud dashboard, harness-init / harness-up, the /ticket loop and its 7 steps, the OpenSpec change folder (openspec/changes/, old docs/changes/), /opsx commands, the review gate, skills, agents, hooks and what they block, notifications, statusline, where files live, troubleshooting. Use whenever the user asks "how do I...", "what is...", "which command...", "why is X blocked", or mentions herdr, hud, harness, pane, workspace, the loop, or a skill/agent name - even with typos (herbr, harnes, hub).
 ---
 
 # Harness help
 
-You are answering Larry inside his own setup. Everything below is true on his Mac.
-Answer in his style: simple words, short sentences, one step at a time, the exact keys or
+You are answering the user inside their own setup. Everything below is true on this Mac.
+Answer in their style: simple words, short sentences, one step at a time, the exact keys or
 command to type. If the answer is not in this sheet, **read the manual first**:
 
 - `~/GITHUB/claude-harness/docs/USER-MANUAL.md` — the user manual (sections 0–11)
-- `~/GITHUB/claude-harness/docs/agentic-workflow-setup.md` — what was set up and why, what is pending
 - `~/GITHUB/claude-harness/hooks/README.md` — the hooks
 - For Herdr CLI syntax run `herdr --help` / `herdr pane` / `herdr workspace` (the binary is the truth)
 - For Herdr keys/concepts: https://herdr.dev/docs/keyboard/ and https://herdr.dev/docs/concepts/
@@ -20,7 +19,7 @@ command to type. If the answer is not in this sheet, **read the manual first**:
 ```
 Herdr (runtime)  ->  one workspace per repo  ->  left pane: claude   right pane: hud
 /ticket <ID or words>  ->  1 Intent -> 2 Spec -> 3 Ready -> 4 Implement -> 5 QA -> 6 Done -> 7 Measure
-one step per turn, Larry says "go"
+one step per turn, the user says "go"
 ```
 
 ## Herdr — keys (prefix = ctrl+b: press it, let go, then the key)
@@ -76,7 +75,7 @@ Refreshes itself every 5 s.
 Each ticket = one OpenSpec change: `openspec/changes/<id>-<slug>/` (lower case, e.g. `mmv-278-evening-ritual`) with `index.md` (stage), `proposal.md` (why, out of scope, user stories, hypotheses, decision log), `research.md`, `specs/<capability>/spec.md` (delta spec, happy + edge `S1` scenarios), `design.md`, `tasks.md` (slices `## 1. T1 ... (blocked by: ...)` with `- [ ] 1.1` boxes), `qa-report.md`. Old `docs/changes/` folders still work.
 Repo has no `openspec/`? Run once: `openspec init --tools none` (skills and `/opsx:*` are global from the harness).
 
-| Step | Claude | Larry |
+| Step | Claude | You |
 |---|---|---|
 | 1 Intent | reads ticket, makes folder | `go` |
 | 2 Spec & Design | grilling questions, @scout research, writes spec with **happy + edge** scenarios | answer, `go` |
@@ -92,7 +91,7 @@ Small change: `/opsx:propose` → `/opsx:apply` → `/opsx:archive`. Small bug: 
 ## Skills and agents
 
 Skills: `/ticket /qa /measure /triage-bug /tdd-loop /ship-it /hotfix /postmortem /grill-me /wayfinder /onboard-repo /standup /pm-handoff /ctx /harness-help /herdr` plus Superpowers, Matt Pocock's, Vercel, drawio.
-From Anthony: `/to-spec /to-tickets /implement-spec /thermonuclear-review /ponytail /ponytail-review /two-axis-review` (his code review, renamed so the built-in `/code-review` still works) `/asd-ste100` (simple English) `/duel` (Claude vs Codex, needs `codex login`). Not installed on purpose: fleet, reconcile.
+Review and spec skills: `/to-spec /to-tickets /implement-spec /thermonuclear-review /ponytail /ponytail-review /two-axis-review` (renamed so the built-in `/code-review` still works) `/asd-ste100` (simple English) `/duel` (Claude vs Codex, needs `codex login`). Not installed on purpose: fleet, reconcile.
 OpenSpec: skills `openspec-propose/explore/apply-change/update-change/sync-specs/archive-change`, commands `/opsx:propose|explore|apply|update|sync|archive`.
 Agents: `@scout` (research) `@qa` `@verifier` (spec coverage) `@reviewer` (correctness) `@security-reviewer` `@explorer` `@planner` `@tester`.
 
@@ -102,13 +101,13 @@ Agents: `@scout` (research) `@qa` `@verifier` (spec coverage) `@reviewer` (corre
 
 ## Guardrails (hooks, cannot be talked past)
 
-Blocked: push to main/master, any force push (a simple text check; GitHub branch protection on `master` is the real lock), merging a PR (`gh pr merge`, `gh api` merge, graphql), schema push (`db:push`, `drizzle-kit push`, `prisma db push`), `rm -rf ~`, reading real `.env` files, and opening a PR before `/review-gate` passed on the current commit. The PR rule is strict: a command that only *mentions* the PR-open words is blocked too, so PR bodies go in a file (`/ship-it` does this). If blocked: say so in one line, stop, Larry does it by hand if he really wants.
+Blocked: push to main/master, any force push (a simple text check; GitHub branch protection on `master` is the real lock), merging a PR (`gh pr merge`, `gh api` merge, graphql), schema push (`db:push`, `drizzle-kit push`, `prisma db push`), `rm -rf ~`, reading real `.env` files, and opening a PR before `/review-gate` passed on the current commit. The PR rule is strict: a command that only *mentions* the PR-open words is blocked too, so PR bodies go in a file (`/ship-it` does this). If blocked: say so in one line, stop, the user does it by hand if he really wants.
 Sounds: Hero = turn finished; Glass + banner = Claude needs you; Herdr ding = agent in another workspace. Status bar: `model | ctx 37% [###.......] | branch | $` — over 40% → `/compact` or `/clear`.
 
 ## Where things live
 
-`~/GITHUB/claude-harness` (git, private remote https://github.com/Linn-Htet123/claude-harness ; Larry pushes by hand) → symlinked into `~/.claude` by `./install.sh`. **New Mac:** `git clone` it, then `./setup-new-mac.sh` (installs everything: brew tools, symlinks, PATH commands, hooks into settings.json with backup, CLAUDE.md, Herdr config + integration, Playwright MCP). Then `/plugin install superpowers` + `mattpocock-skills`, and `/mcp` logins.
-`~/.claude/settings.json` hooks + statusline (backups in `~/.claude/backups/`). `~/.claude/CLAUDE.md` who Larry is + the loop + ASD-STE100 output style, review before PR (both axes), agent changelog, session journal. `~/.claude/shared/agent-changelog.md` changelog. `~/.claude/shared/journal/` session journal. `~/.claude/commands/opsx/` the /opsx commands (install.sh links command sub-folders). `<repo>/.claude/rules/` path-scoped rules. `<repo>/openspec/changes/` tickets (old: `docs/changes/`). `<repo>/openspec/specs/` living spec library. `<repo>/docs/decisions/` ADRs.
+`~/GITHUB/claude-harness` (git; you push by hand) → symlinked into `~/.claude` by `./install.sh`. **New Mac:** `git clone` it, then `./setup-new-mac.sh` (installs everything: brew tools, symlinks, PATH commands, hooks into settings.json with backup, CLAUDE.md, Herdr config + integration, Playwright MCP). Then `/plugin install superpowers` + `mattpocock-skills`, and `/mcp` logins.
+`~/.claude/settings.json` hooks + statusline (backups in `~/.claude/backups/`). `~/.claude/CLAUDE.md` who you are + the loop + ASD-STE100 output style, review before PR (both axes), agent changelog, session journal. `~/.claude/shared/agent-changelog.md` changelog. `~/.claude/shared/journal/` session journal. `~/.claude/commands/opsx/` the /opsx commands (install.sh links command sub-folders). `<repo>/.claude/rules/` path-scoped rules. `<repo>/openspec/changes/` tickets (old: `docs/changes/`). `<repo>/openspec/specs/` living spec library. `<repo>/docs/decisions/` ADRs.
 
 ## Troubleshooting (short)
 

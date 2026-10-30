@@ -201,7 +201,7 @@ its own pull request**. Same idea here.
 ```
 
 Branch, commit, push, open a PR. It stops there. It does not merge.
-Anthony merges.
+A human merges.
 
 **Something broke**
 

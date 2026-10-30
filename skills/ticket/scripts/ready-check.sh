@@ -61,5 +61,5 @@ if [ "$OLD" = 0 ] && [ "${NO_VALIDATE:-0}" != 1 ] && command -v openspec >/dev/n
   echo "$OUT" | grep -q 'is valid' && ok "openspec validate passes" || { bad "openspec validate fails:"; echo "$OUT" | sed 's/^/      /'; }
 fi
 
-echo; if [ "$FAIL" = "0" ]; then echo "READY: all checks pass. Ask Larry to approve, then set 'stage: ready' in index.md."; else echo "NOT READY: fix the FAIL lines above."; fi
+echo; if [ "$FAIL" = "0" ]; then echo "READY: all checks pass. Ask the user to approve, then set 'stage: ready' in index.md."; else echo "NOT READY: fix the FAIL lines above."; fi
 exit $FAIL
